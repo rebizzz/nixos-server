@@ -1,4 +1,8 @@
-{pkgs, ...}: {
+{
+  config,
+  pkgs,
+  ...
+}: {
   networking = {
     hostName = "nixos-server";
     networkmanager = {
@@ -8,6 +12,7 @@
         backend = "wpa_supplicant";
       };
       ensureProfiles = {
+        environmentFiles = [config.sops.templates."network-manager.env".path];
         profiles.ReBiz = {
           connection = {
             id = "ReBiz";
@@ -21,7 +26,7 @@
           };
           wifi-security = {
             key-mgmt = "wpa-psk";
-            psk = "okay0001";
+            psk = "$WIFI_PSK";
           };
           ipv4.method = "auto";
           ipv6.method = "auto";

@@ -10,12 +10,17 @@
     preservation = {
       url = "github:nix-community/preservation";
     };
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
     nixpkgs,
     disko,
     preservation,
+    sops-nix,
     ...
   } @ inputs: {
     nixosConfigurations.nixos-server = nixpkgs.lib.nixosSystem {
@@ -24,6 +29,7 @@
       modules = [
         disko.nixosModules.disko
         preservation.nixosModules.default
+        sops-nix.nixosModules.sops
         ./configuration.nix
       ];
     };

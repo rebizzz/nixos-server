@@ -2,6 +2,7 @@
   imports = [
     ./hardware-configuration.nix
     ./disko.nix
+    ./modules/secrets.nix
     ./modules/users.nix
     ./modules/networking.nix
     ./modules/zfs.nix
@@ -9,8 +10,6 @@
     ./modules/services.nix
     ./modules/security.nix
     ./modules/persistence.nix
-    # Optional modules — uncomment to enable:
-    # ./modules/media.nix      # Jellyfin + VA-API hardware transcoding
   ];
 
   boot.loader = {
