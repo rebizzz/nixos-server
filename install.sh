@@ -5,12 +5,12 @@ echo "=========================================="
 echo " NixOS Server One-Shot Installer"
 echo "=========================================="
 
-# 1. Enable zram0 swap to prevent OOM
-echo "[1/4] Configuring zram0 compressed swap..."
+# 1. Enable 8GB zram0 swap to prevent OOM
+echo "[1/4] Configuring 8GB zram0 compressed swap..."
 modprobe zram || true
 
 if [ ! -b /dev/zram0 ]; then
-  zramctl -f -s 4G --algorithm zstd 2>/dev/null || true
+  zramctl -f -s 8G --algorithm zstd 2>/dev/null || true
 fi
 
 if [ -b /dev/zram0 ]; then
@@ -19,23 +19,26 @@ if [ -b /dev/zram0 ]; then
     echo 1 > /sys/block/zram0/reset 2>/dev/null || true
   fi
   echo zstd > /sys/block/zram0/comp_algorithm 2>/dev/null || echo lz4 > /sys/block/zram0/comp_algorithm || true
-  echo 4G > /sys/block/zram0/disksize 2>/dev/null || true
+  echo 8G > /sys/block/zram0/disksize 2>/dev/null || true
   mkswap /dev/zram0
   swapon -p 100 /dev/zram0
   sysctl vm.swappiness=180 >/dev/null
-  echo "✓ /dev/zram0 swap (4GB) active."
-else
-  echo "⚠ Warning: /dev/zram0 not available, continuing with physical RAM."
+  echo "✓ /dev/zram0 swap (8GB) active."
 fi
 
-# Remount tmpfs and overlay stores to use zram capacity (prevents "No space left on device")
-echo "Expanding Live ISO tmpfs sizes..."
-mount -o remount,size=4G / 2>/dev/null || true
-mount -o remount,size=4G /nix/.rw-store 2>/dev/null || true
+# Remount all tmpfs and overlay stores to 6GB
+echo "Expanding Live ISO tmpfs sizes to 6GB..."
+mount -o remount,size=6G / 2>/dev/null || true
+mount -o remount,size=6G /nix/.rw-store 2>/dev/null || true
+mount -o remount,size=6G /tmp 2>/dev/null || true
+mount -o remount,size=6G /run 2>/dev/null || true
 
-# Show available memory
+# Clean caches
+rm -rf /tmp/* /root/.cache/nix /home/nixos/.cache/nix 2>/dev/null || true
+
+# Show available space
 free -h
-df -h /
+df -h / /nix/.rw-store 2>/dev/null || df -h /
 
 # 2. Partition and format with Disko
 echo ""
