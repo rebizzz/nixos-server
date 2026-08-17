@@ -12,7 +12,7 @@
     };
   };
 
-  # Tailscale Mesh VPN for secure remote access
+  # Tailscale Mesh VPN for headless remote access
   services.tailscale = {
     enable = true;
     useRoutingFeatures = "server";
@@ -25,11 +25,13 @@
     notifications.mail.enable = false;
   };
 
-  # Additional server monitoring and diagnostic utilities
+  # Essential server utilities
   environment.systemPackages = with pkgs; [
     smartmontools
-    glances
+    btop
+    htop
     lm_sensors
     tailscale
+    cockpit
   ];
 }

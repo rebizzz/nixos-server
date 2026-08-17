@@ -12,7 +12,7 @@
     };
     firewall = {
       enable = true;
-      allowedTCPPorts = [ 22 80 443 9090 ]; # SSH, HTTP, HTTPS, Cockpit
+      allowedTCPPorts = [ 22 9090 ]; # SSH & Cockpit
       allowedUDPPorts = [ ];
     };
   };
