@@ -9,7 +9,6 @@ echo "=========================================="
 echo "[1/4] Configuring zram0 compressed swap..."
 modprobe zram || true
 
-# If /dev/zram0 doesn't exist yet, create one using zramctl or sysfs
 if [ ! -b /dev/zram0 ]; then
   zramctl -f -s 4G --algorithm zstd 2>/dev/null || true
 fi
@@ -29,8 +28,14 @@ else
   echo "⚠ Warning: /dev/zram0 not available, continuing with physical RAM."
 fi
 
+# Remount tmpfs and overlay stores to use zram capacity (prevents "No space left on device")
+echo "Expanding Live ISO tmpfs sizes..."
+mount -o remount,size=4G / 2>/dev/null || true
+mount -o remount,size=4G /nix/.rw-store 2>/dev/null || true
+
 # Show available memory
 free -h
+df -h /
 
 # 2. Partition and format with Disko
 echo ""
