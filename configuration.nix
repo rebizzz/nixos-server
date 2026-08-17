@@ -10,6 +10,7 @@
     ./modules/containers.nix
     ./modules/services.nix
     ./modules/security.nix
+    ./modules/persistence.nix
   ];
 
   # Bootloader setup (UEFI systemd-boot)
