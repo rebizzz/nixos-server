@@ -36,10 +36,6 @@ mount -o remount,size=6G /run 2>/dev/null || true
 # Clean caches
 rm -rf /tmp/* /root/.cache/nix /home/nixos/.cache/nix 2>/dev/null || true
 
-# Show available space
-free -h
-df -h / /nix/.rw-store 2>/dev/null || df -h /
-
 # 2. Partition and format with Disko
 echo ""
 echo "[2/4] Partitioning & formatting drives via Disko..."
@@ -50,7 +46,7 @@ nix --extra-experimental-features "nix-command flakes" run github:nix-community/
 # 3. Install NixOS
 echo ""
 echo "[3/4] Installing NixOS from github:rebizzz/nixos-server..."
-nixos-install --flake github:rebizzz/nixos-server#nixos-server --no-root-passwd
+nixos-install --flake github:rebizzz/nixos-server#nixos-server --no-root-passwd --no-channel-copy
 
 # 4. Finish & Reboot
 echo ""
