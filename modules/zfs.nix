@@ -9,18 +9,15 @@
       interval = "weekly";
       pools = [ "data" ];
     };
-    # HDDs don't support TRIM — disable to avoid spurious errors
     trim.enable = false;
   };
 
-  # Btrfs root SSD scrub — catches bitrot on system drive
   services.btrfs.autoScrub = {
     enable = true;
     interval = "monthly";
     fileSystems = [ "/" ];
   };
 
-  # Sanoid automated ZFS snapshots for data pool
   services.sanoid = {
     enable = true;
     datasets."data" = {
@@ -38,7 +35,6 @@
     };
   };
 
-  # Cap journal size to prevent SSD write churn
   services.journald.extraConfig = ''
     SystemMaxUse=500M
     RuntimeMaxUse=100M

@@ -11,29 +11,21 @@
     ./modules/services.nix
     ./modules/security.nix
     ./modules/persistence.nix
+    # Optional modules — uncomment to enable:
+    # ./modules/media.nix      # Jellyfin + VA-API hardware transcoding
   ];
 
-  # Bootloader (UEFI systemd-boot)
   boot.loader = {
     systemd-boot = {
       enable = true;
-      configurationLimit = 10; # Prevent /boot partition exhaustion
+      configurationLimit = 10;
     };
     efi.canTouchEfiVariables = true;
   };
 
-  # Keep /tmp in RAM — avoids SSD write wear on ephemeral files
-  boot.tmp = {
-    useTmpfs = true;
-    tmpfsSize = "50%";
-    cleanOnBoot = true;
-  };
-
-  # Time zone and locale
   time.timeZone = "Asia/Kolkata";
   i18n.defaultLocale = "en_US.UTF-8";
 
-  # Nix configuration
   nix = {
     settings = {
       experimental-features = [ "nix-command" "flakes" ];
@@ -46,7 +38,6 @@
     };
   };
 
-  # zram swap — compressed in-RAM swap, protects SSD from swap wear
   zramSwap = {
     enable = true;
     algorithm = "zstd";
@@ -54,14 +45,12 @@
     priority = 100;
   };
 
-  # Systemd OOM daemon — gracefully kills runaway processes before hard freeze
   systemd.oomd = {
     enable = true;
     enableUserSlices = true;
     enableSystemSlice = true;
   };
 
-  # Core system packages
   environment.systemPackages = with pkgs; [
     vim
     git
@@ -75,7 +64,6 @@
     e2fsprogs
   ];
 
-  # Import ZFS data pool on boot
   boot.zfs.extraPools = [ "data" ];
 
   system.stateVersion = "26.05";

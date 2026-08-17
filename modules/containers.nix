@@ -1,7 +1,6 @@
 { pkgs, ... }:
 
 {
-  # Container Runtime (Docker)
   virtualisation.docker = {
     enable = true;
     autoPrune = {
