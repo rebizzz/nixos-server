@@ -6,27 +6,33 @@
     networkmanager = {
       enable = true;
       wifi = {
-        powersave = false; # Disable Wi-Fi power saving for server stability
+        powersave = false;         # Keep USB Wi-Fi dongle always awake
         backend = "wpa_supplicant";
       };
     };
     firewall = {
       enable = true;
-      allowedTCPPorts = [ 22 9090 ]; # SSH & Cockpit
-      allowedUDPPorts = [ ];
+      allowedTCPPorts = [ 22 9090 ]; # SSH, Cockpit
+      allowedUDPPorts = [ 5353 ];    # mDNS
+      # Tailscale interface is trusted — allow all traffic through it
+      trustedInterfaces = [ "tailscale0" ];
+      checkReversePath = "loose"; # Required for Tailscale subnet routing
     };
   };
 
-  # Wireless tools and network management packages
-  environment.systemPackages = with pkgs; [
-    iw
-    wirelesstools
-    wpa_supplicant
-    networkmanager
-    ethtool
-  ];
+  # mDNS via Avahi — enables nixos-server.local hostname resolution on LAN
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    publish = {
+      enable = true;
+      addresses = true;
+      domain = true;
+    };
+    openFirewall = true;
+  };
 
-  # OpenSSH server configuration
+  # OpenSSH server
   services.openssh = {
     enable = true;
     settings = {
@@ -36,4 +42,10 @@
       X11Forwarding = false;
     };
   };
+
+  # Useful network CLI tools
+  environment.systemPackages = with pkgs; [
+    iw
+    ethtool
+  ];
 }

@@ -13,17 +13,27 @@
     ./modules/persistence.nix
   ];
 
-  # Bootloader setup (UEFI systemd-boot)
+  # Bootloader (UEFI systemd-boot)
   boot.loader = {
-    systemd-boot.enable = true;
+    systemd-boot = {
+      enable = true;
+      configurationLimit = 10; # Prevent /boot partition exhaustion
+    };
     efi.canTouchEfiVariables = true;
   };
 
-  # Time zone and locale settings
+  # Keep /tmp in RAM — avoids SSD write wear on ephemeral files
+  boot.tmp = {
+    useTmpfs = true;
+    tmpfsSize = "50%";
+    cleanOnBoot = true;
+  };
+
+  # Time zone and locale
   time.timeZone = "Asia/Kolkata";
   i18n.defaultLocale = "en_US.UTF-8";
 
-  # Enable Nix Flakes and modern CLI tools
+  # Nix configuration
   nix = {
     settings = {
       experimental-features = [ "nix-command" "flakes" ];
@@ -36,27 +46,37 @@
     };
   };
 
+  # zram swap — compressed in-RAM swap, protects SSD from swap wear
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+    memoryPercent = 50;
+    priority = 100;
+  };
+
+  # Systemd OOM daemon — gracefully kills runaway processes before hard freeze
+  systemd.oomd = {
+    enable = true;
+    enableUserSlices = true;
+    enableSystemSlice = true;
+  };
+
   # Core system packages
   environment.systemPackages = with pkgs; [
     vim
-    neovim
     git
     curl
     wget
-    htop
     btop
     tmux
     pciutils
     usbutils
-    lm_sensors
     btrfs-progs
-    zfs
     e2fsprogs
   ];
 
-  # Enable zfs service for importing data pool on boot
+  # Import ZFS data pool on boot
   boot.zfs.extraPools = [ "data" ];
 
-  # System state version
   system.stateVersion = "26.05";
 }

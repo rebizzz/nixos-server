@@ -1,4 +1,4 @@
-# Do not modify this file manually! Generated for nixos-server based on target hardware scan.
+# Do not modify this file manually!
 { config, lib, pkgs, modulesPath, ... }:
 
 {
@@ -6,8 +6,12 @@
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  # Disable USB autosuspend for Realtek USB Wi-Fi stability
-  boot.kernelParams = [ "usbcore.autosuspend=-1" ];
+  # Disable USB autosuspend — keeps Realtek USB Wi-Fi dongle permanently awake
+  boot.kernelParams = [
+    "usbcore.autosuspend=-1"
+    "panic=10"   # Auto-reboot 10s after kernel panic (headless resilience)
+    "oops=panic" # Treat kernel oops as panic
+  ];
 
   boot.initrd.availableKernelModules = [
     "ahci"
@@ -28,25 +32,23 @@
   ];
   boot.extraModulePackages = [ ];
 
-  # Supported filesystems for Btrfs SSD and ZFS storage array
+  # ZFS ARC tuning — cap at 1.5GB to prevent OOM on 4-8GB RAM systems
+  boot.extraModprobeConfig = ''
+    options zfs zfs_arc_min=268435456
+    options zfs zfs_arc_max=1610612736
+    options zfs zfs_compressed_arc_enabled=1
+    options zfs zfs_arc_sys_free=536870912
+  '';
+
+  # Filesystems
   boot.supportedFilesystems = [ "btrfs" "zfs" ];
 
-  # Hardware firmware and wireless regulatory database
+  # Non-free firmware (required for Realtek USB Wi-Fi rtw88 + Intel microcode)
   hardware.enableRedistributableFirmware = true;
-  hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+  hardware.cpu.intel.updateMicrocode = true;
   hardware.wirelessRegulatoryDatabase = true;
 
-  # Hardware acceleration
-  hardware.graphics = {
-    enable = true;
-    extraPackages = with pkgs; [
-      intel-media-driver
-      intel-vaapi-driver
-      libvdpau-va-gl
-    ];
-  };
-
-  # Host ID required for ZFS pool safety
+  # Host ID required for ZFS pool import safety
   networking.hostId = "8425e349";
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
