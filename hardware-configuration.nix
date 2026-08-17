@@ -6,6 +6,9 @@
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
+  # Disable USB autosuspend for Realtek USB Wi-Fi stability
+  boot.kernelParams = [ "usbcore.autosuspend=-1" ];
+
   boot.initrd.availableKernelModules = [
     "ahci"
     "ehci_pci"
@@ -17,6 +20,7 @@
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [
     "kvm-intel"
+    "tcp_bbr"
     "rtw88_8821cu"
     "rtw88_core"
     "rtw88_usb"

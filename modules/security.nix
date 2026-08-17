@@ -12,8 +12,12 @@
     ];
   };
 
-  # Kernel network security sysctl tweaks
+  # Kernel network security and performance sysctl tweaks
   boot.kernel.sysctl = {
+    # TCP BBR Congestion Control for optimal Wi-Fi & LAN throughput
+    "net.core.default_qdisc" = "fq";
+    "net.ipv4.tcp_congestion_control" = "bbr";
+
     # Protection against SYN flood attacks
     "net.ipv4.tcp_syncookies" = 1;
     # Reverse path filtering for spoofing protection
