@@ -17,38 +17,38 @@
                 type = "filesystem";
                 format = "vfat";
                 mountpoint = "/boot";
-                mountOptions = [ "umask=0077" ];
+                mountOptions = ["umask=0077"];
               };
             };
             root = {
               size = "100%";
               content = {
                 type = "btrfs";
-                extraArgs = [ "-f" ];
+                extraArgs = ["-f"];
                 subvolumes = {
                   "@" = {
                     mountpoint = "/";
-                    mountOptions = [ "compress=zstd:1" "noatime" ];
+                    mountOptions = ["compress=zstd:1" "noatime"];
                   };
                   "@home" = {
                     mountpoint = "/home";
-                    mountOptions = [ "compress=zstd:1" "noatime" ];
+                    mountOptions = ["compress=zstd:1" "noatime"];
                   };
                   "@nix" = {
                     mountpoint = "/nix";
-                    mountOptions = [ "compress=zstd:1" "noatime" ];
+                    mountOptions = ["compress=zstd:1" "noatime"];
                   };
                   "@persistent" = {
                     mountpoint = "/persistent";
-                    mountOptions = [ "compress=zstd:1" "noatime" ];
+                    mountOptions = ["compress=zstd:1" "noatime"];
                   };
                   "@tmp" = {
                     mountpoint = "/tmp";
-                    mountOptions = [ "compress=zstd:1" "noatime" ];
+                    mountOptions = ["compress=zstd:1" "noatime"];
                   };
                   "@log" = {
                     mountpoint = "/var/log";
-                    mountOptions = [ "compress=zstd:1" "noatime" ];
+                    mountOptions = ["compress=zstd:1" "noatime"];
                   };
                 };
               };

@@ -1,13 +1,11 @@
-{ ... }:
-
-{
+_: {
   boot.zfs.forceImportRoot = false;
 
   services.zfs = {
     autoScrub = {
       enable = true;
       interval = "weekly";
-      pools = [ "data" ];
+      pools = ["data"];
     };
     trim.enable = false;
   };
@@ -15,13 +13,13 @@
   services.btrfs.autoScrub = {
     enable = true;
     interval = "monthly";
-    fileSystems = [ "/" ];
+    fileSystems = ["/"];
   };
 
   services.sanoid = {
     enable = true;
     datasets."data" = {
-      useTemplate = [ "production" ];
+      useTemplate = ["production"];
       recursive = true;
     };
     templates.production = {

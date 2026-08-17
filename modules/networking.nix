@@ -1,6 +1,4 @@
-{ pkgs, ... }:
-
-{
+{pkgs, ...}: {
   networking = {
     hostName = "nixos-server";
     networkmanager = {
@@ -12,9 +10,9 @@
     };
     firewall = {
       enable = true;
-      allowedTCPPorts = [ 22 9090 ];
-      allowedUDPPorts = [ 5353 ];
-      trustedInterfaces = [ "tailscale0" ];
+      allowedTCPPorts = [22 9090];
+      allowedUDPPorts = [5353];
+      trustedInterfaces = ["tailscale0"];
       checkReversePath = "loose";
     };
   };

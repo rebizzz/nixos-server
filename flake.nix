@@ -12,10 +12,15 @@
     };
   };
 
-  outputs = { self, nixpkgs, disko, preservation, ... }@inputs: {
+  outputs = {
+    nixpkgs,
+    disko,
+    preservation,
+    ...
+  } @ inputs: {
     nixosConfigurations.nixos-server = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
-      specialArgs = { inherit inputs; };
+      specialArgs = {inherit inputs;};
       modules = [
         disko.nixosModules.disko
         preservation.nixosModules.default

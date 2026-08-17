@@ -1,6 +1,4 @@
-{ pkgs, ... }:
-
-{
+{pkgs, ...}: {
   # Jellyfin with Intel VA-API hardware transcoding (i3-3220 supports VA-API via i965 driver)
   #
   # To enable: uncomment ./modules/media.nix in configuration.nix imports
@@ -16,12 +14,12 @@
   hardware.graphics = {
     enable = true;
     extraPackages = with pkgs; [
-      intel-vaapi-driver  # i965 driver for Ivy Bridge / Haswell
+      intel-vaapi-driver # i965 driver for Ivy Bridge / Haswell
       libvdpau-va-gl
     ];
   };
 
-  users.users.jellyfin.extraGroups = [ "video" "render" ];
+  users.users.jellyfin.extraGroups = ["video" "render"];
 
   # Persist Jellyfin config and metadata across ephemeral root reboots
   preservation.preserveAt."/persistent".directories = [

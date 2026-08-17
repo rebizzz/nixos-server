@@ -1,12 +1,13 @@
-{ ... }:
-
-{
+_: {
   preservation = {
     enable = true;
     preserveAt."/persistent" = {
-      commonMountOptions = [ "x-gvfs-hide" ];
+      commonMountOptions = ["x-gvfs-hide"];
       directories = [
-        { directory = "/var/lib/nixos"; inInitrd = true; }
+        {
+          directory = "/var/lib/nixos";
+          inInitrd = true;
+        }
         "/var/lib/systemd/timers"
         "/var/log/journal"
         "/var/lib/NetworkManager"
@@ -18,7 +19,10 @@
         "/var/lib/cockpit"
       ];
       files = [
-        { file = "/etc/machine-id"; inInitrd = true; }
+        {
+          file = "/etc/machine-id";
+          inInitrd = true;
+        }
         "/etc/ssh/ssh_host_ed25519_key"
         "/etc/ssh/ssh_host_ed25519_key.pub"
         "/etc/ssh/ssh_host_rsa_key"

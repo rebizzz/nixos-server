@@ -1,6 +1,8 @@
-{ config, lib, pkgs, modulesPath, ... }:
-
 {
+  lib,
+  modulesPath,
+  ...
+}: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
@@ -19,7 +21,7 @@
     "sr_mod"
     "r8169"
   ];
-  boot.initrd.kernelModules = [ ];
+  boot.initrd.kernelModules = [];
   boot.kernelModules = [
     "kvm-intel"
     "tcp_bbr"
@@ -28,7 +30,7 @@
     "rtw88_usb"
     "btusb"
   ];
-  boot.extraModulePackages = [ ];
+  boot.extraModulePackages = [];
 
   boot.extraModprobeConfig = ''
     options zfs zfs_arc_min=268435456
@@ -37,7 +39,7 @@
     options zfs zfs_arc_sys_free=536870912
   '';
 
-  boot.supportedFilesystems = [ "btrfs" "zfs" ];
+  boot.supportedFilesystems = ["btrfs" "zfs"];
 
   hardware.enableRedistributableFirmware = true;
   hardware.cpu.intel.updateMicrocode = true;

@@ -1,6 +1,4 @@
-{ config, lib, pkgs, ... }:
-
-{
+{pkgs, ...}: {
   imports = [
     ./hardware-configuration.nix
     ./disko.nix
@@ -28,7 +26,7 @@
 
   nix = {
     settings = {
-      experimental-features = [ "nix-command" "flakes" ];
+      experimental-features = ["nix-command" "flakes"];
       auto-optimise-store = true;
     };
     gc = {
@@ -64,7 +62,7 @@
     e2fsprogs
   ];
 
-  boot.zfs.extraPools = [ "data" ];
+  boot.zfs.extraPools = ["data"];
 
   system.stateVersion = "26.05";
 }
