@@ -5,7 +5,7 @@
   users.users.rebiz = {
     isNormalUser = true;
     description = "rebiz";
-    extraGroups = [ "wheel" "networkmanager" "storage" "video" "audio" ];
+    extraGroups = [ "wheel" "networkmanager" "docker" "storage" "video" "audio" ];
     shell = pkgs.bashInteractive;
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID9CvwTALuQuiHJlkXTs2U5SKMhiu/lag3jQsbBIyHCl guardiansofspartax@gmail.com"

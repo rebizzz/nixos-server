@@ -7,6 +7,9 @@
     ./modules/users.nix
     ./modules/networking.nix
     ./modules/zfs.nix
+    ./modules/containers.nix
+    ./modules/services.nix
+    ./modules/security.nix
   ];
 
   # Bootloader setup (UEFI systemd-boot)

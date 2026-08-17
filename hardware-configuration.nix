@@ -15,14 +15,22 @@
     "r8169"
   ];
   boot.initrd.kernelModules = [ ];
-  boot.kernelModules = [ "kvm-intel" ];
+  boot.kernelModules = [
+    "kvm-intel"
+    "rtw88_8821cu"
+    "rtw88_core"
+    "rtw88_usb"
+    "btusb"
+  ];
   boot.extraModulePackages = [ ];
 
   # Supported filesystems for Btrfs SSD and ZFS storage array
   boot.supportedFilesystems = [ "btrfs" "zfs" ];
 
-  # CPU Intel microcode & redistribution firmware
+  # Hardware firmware and wireless regulatory database
+  hardware.enableRedistributableFirmware = true;
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+  hardware.wirelessRegulatoryDatabase = true;
 
   # Hardware acceleration
   hardware.graphics = {
