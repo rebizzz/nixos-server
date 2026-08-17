@@ -12,7 +12,7 @@
     };
     firewall = {
       enable = true;
-      allowedTCPPorts = [ 22 80 443 9090 ]; # SSH, HTTP, HTTPS, Cockpit / Web UI
+      allowedTCPPorts = [ 22 80 443 3001 9090 ]; # SSH, HTTP, HTTPS, Uptime Kuma, Cockpit
       allowedUDPPorts = [ ];
     };
   };

@@ -25,6 +25,14 @@
     notifications.mail.enable = false;
   };
 
+  # Uptime Kuma Monitoring Dashboard (Port 3001)
+  services.uptime-kuma = {
+    enable = true;
+    settings = {
+      PORT = "3001";
+    };
+  };
+
   # Additional server monitoring and diagnostic utilities
   environment.systemPackages = with pkgs; [
     smartmontools
