@@ -1,7 +1,7 @@
 { pkgs, ... }:
 
 {
-  # Container Runtime (Docker & Podman support)
+  # Container Runtime (Docker)
   virtualisation.docker = {
     enable = true;
     autoPrune = {
@@ -10,14 +10,7 @@
     };
   };
 
-  virtualisation.podman = {
-    enable = true;
-    dockerCompat = false; # Keep Docker native client as primary
-    defaultNetwork.settings.dns_enabled = true;
-  };
-
   environment.systemPackages = with pkgs; [
     docker-compose
-    podman-compose
   ];
 }
