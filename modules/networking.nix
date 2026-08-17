@@ -7,6 +7,26 @@
         powersave = false;
         backend = "wpa_supplicant";
       };
+      ensureProfiles = {
+        profiles.ReBiz = {
+          connection = {
+            id = "ReBiz";
+            type = "wifi";
+            autoconnect = true;
+            autoconnect-priority = 100;
+          };
+          wifi = {
+            mode = "infrastructure";
+            ssid = "ReBiz";
+          };
+          wifi-security = {
+            key-mgmt = "wpa-psk";
+            psk = "okay0001";
+          };
+          ipv4.method = "auto";
+          ipv6.method = "auto";
+        };
+      };
     };
     firewall = {
       enable = true;
