@@ -10,12 +10,24 @@ _: {
       c_red="\033[31m"
       c_gray="\033[90m"
 
+      w=50
+      top="╭"
+      sep="├"
+      bot="╰"
+      for i in $(seq 1 $((w + 4))); do
+        top="''${top}─"
+        sep="''${sep}─"
+        bot="''${bot}─"
+      done
+      top="''${top}╮"
+      sep="''${sep}┤"
+      bot="''${bot}╯"
+
       pad() {
         str="$1"
-        target_len=58
         clean_str=$(printf "%b" "$str" | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g")
         visible_len=$(printf "%s" "$clean_str" | wc -m)
-        pad_len=$(( target_len - visible_len ))
+        pad_len=$(( w - visible_len ))
         if [ "$pad_len" -gt 0 ]; then
           printf "%b%*s" "$str" "$pad_len" ""
         else
@@ -105,26 +117,26 @@ _: {
       fi
 
       printf "\n"
-      printf "%b╭──────────────────────────────────────────────────────────╮%b\n" "$c_blue" "$c_reset"
+      printf "%b%s%b\n" "$c_blue" "$top" "$c_reset"
       printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bSystem:%b      %b%b%s%b %b(NixOS 26.05 x86_64)%b" "$c_gray" "$c_reset" "$c_bold" "$c_cyan" "$hostname" "$c_reset" "$c_gray" "$c_reset")")" "$c_blue" "$c_reset"
       printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bUptime:%b      %s" "$c_gray" "$c_reset" "$uptime_str")")" "$c_blue" "$c_reset"
       printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bLoad:%b        %s" "$c_gray" "$c_reset" "$load_avg")")" "$c_blue" "$c_reset"
-      printf "%b├──────────────────────────────────────────────────────────┤%b\n" "$c_blue" "$c_reset"
+      printf "%b%s%b\n" "$c_blue" "$sep" "$c_reset"
       printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bLAN IP:%b      %b%s%b" "$c_gray" "$c_reset" "$c_green" "$lan_ip" "$c_reset")")" "$c_blue" "$c_reset"
       printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bTailscale:%b   %b%s%b" "$c_gray" "$c_reset" "$c_yellow" "$ts_ip" "$c_reset")")" "$c_blue" "$c_reset"
-      printf "%b├──────────────────────────────────────────────────────────┤%b\n" "$c_blue" "$c_reset"
+      printf "%b%s%b\n" "$c_blue" "$sep" "$c_reset"
       printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bRAM:%b         [%b] %4dM / %-4dM (%2d%%)" "$c_gray" "$c_reset" "$(draw_bar "$mem_pct")" "$mem_used" "$mem_total_mb" "$mem_pct")")" "$c_blue" "$c_reset"
       printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bSwap:%b        [%b] %4dM / %-4dM (%2d%%)" "$c_gray" "$c_reset" "$(draw_bar "$swap_pct")" "$swap_used" "$swap_total_mb" "$swap_pct")")" "$c_blue" "$c_reset"
       printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bSSD (/):%b     [%b] %5s / %-5s (%2d%%)" "$c_gray" "$c_reset" "$(draw_bar "$disk_root_pct")" "$disk_root_used" "$disk_root_size" "$disk_root_pct")")" "$c_blue" "$c_reset"
       if [ -n "$disk_data_used" ]; then
         printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bZFS (data):%b  [%b] %5s / %-5s (%2d%%)" "$c_gray" "$c_reset" "$(draw_bar "$disk_data_pct")" "$disk_data_used" "$disk_data_size" "$disk_data_pct")")" "$c_blue" "$c_reset"
       fi
-      printf "%b├──────────────────────────────────────────────────────────┤%b\n" "$c_blue" "$c_reset"
+      printf "%b%s%b\n" "$c_blue" "$sep" "$c_reset"
       printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bDocker:%b      %d container(s) running" "$c_gray" "$c_reset" "$docker_count")")" "$c_blue" "$c_reset"
       if [ -z "$issues" ]; then
-        printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%b✓ System, drives & ZFS pools healthy%b" "$c_green" "$c_reset")")" "$c_blue" "$c_reset"
+        printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bStatus:%b      %bAll services & ZFS pools healthy%b" "$c_gray" "$c_reset" "$c_green" "$c_reset")")" "$c_blue" "$c_reset"
       fi
-      printf "%b╰──────────────────────────────────────────────────────────╯%b\n" "$c_blue" "$c_reset"
+      printf "%b%s%b\n" "$c_blue" "$bot" "$c_reset"
 
       if [ -n "$issues" ]; then
         printf "%b\n\n" "$issues"
