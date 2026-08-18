@@ -56,7 +56,6 @@ _: {
 
     services.openssh = {
       enable = true;
-      # host keys survive the ephemeral root wipe so reboots don't re-key the box
       hostKeys = [
         {
           path = "/persistent/etc/ssh/ssh_host_ed25519_key";
@@ -69,9 +68,6 @@ _: {
         }
       ];
       settings = {
-        # rebiz already has full passwordless sudo, so a second privileged
-        # SSH entry point (root) and a password-guessable one both just add
-        # attack surface without adding capability.
         PermitRootLogin = "no";
         PasswordAuthentication = false;
         KbdInteractiveAuthentication = false;
@@ -79,12 +75,7 @@ _: {
       };
     };
 
-    # The Wi-Fi dongle boots into a factory CD-ROM mode (0bda:1a2b) instead
-    # of NIC mode (0bda:c820). usb-modeswitch-data's bundled config for this
-    # ID targets a different device, so override the target below. Don't
-    # switch this udev rule to call usb_modeswitch directly (RUN+=) instead
-    # of the async dispatcher: a direct call blocks udev for several seconds
-    # and has previously hard-reset the box by missing the boot watchdog.
+    # dongle boots into CD-ROM mode (0bda:1a2b) instead of NIC mode (0bda:c820)
     services.udev.packages = with pkgs; [usb-modeswitch-data usb-modeswitch];
     systemd.packages = [pkgs.usb-modeswitch];
     environment.etc."usb_modeswitch.d/0bda:1a2b".text = ''
@@ -97,15 +88,12 @@ _: {
 
     environment.systemPackages = [pkgs.usb-modeswitch];
 
-    # NM autoconnect doesn't reliably bring "ReBiz" up on its own: a known
-    # upstream race between ensure-profiles and NM's init (nixpkgs#296450).
-    # Automate the documented workaround (`nmcli connection up`).
+    # works around nixpkgs#296450 (NM ensure-profiles autoconnect race)
     systemd.services.wifi-autoconnect = {
       description = "Ensure the wifi connection comes up (NM autoconnect workaround)";
       after = ["NetworkManager.service"];
       serviceConfig = {
         Type = "oneshot";
-        # bash builtins only, no awk/grep/cut: systemd services get a minimal PATH
         ExecStart = pkgs.writeShellScript "wifi-autoconnect" ''
           is_connected() {
             connected=0

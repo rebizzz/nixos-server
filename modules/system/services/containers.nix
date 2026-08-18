@@ -5,6 +5,7 @@ _: {
       autoPrune = {
         enable = true;
         dates = "weekly";
+        flags = ["-a"];
       };
     };
 

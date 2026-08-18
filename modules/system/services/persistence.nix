@@ -44,9 +44,6 @@ _: {
             inInitrd = true;
           }
           "/etc/adjtime"
-          # Only the cache file, not the whole /etc/zfs dir: persisting the
-          # directory shadows NixOS's environment.etc-managed /etc/zfs/zed.d
-          # symlinks and crash-loops zed with "No such file or directory".
           "/etc/zfs/zpool.cache"
         ];
       };
@@ -70,7 +67,6 @@ _: {
       '';
     };
 
-    # sops-nix needs the age key from /persistent before it can decrypt user_password.
     fileSystems."/persistent".neededForBoot = true;
     fileSystems."/nix".neededForBoot = true;
   };

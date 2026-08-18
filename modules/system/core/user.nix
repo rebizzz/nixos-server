@@ -17,9 +17,6 @@ _: {
       ];
     };
 
-    # No authorizedKeys here: sshd.settings.PermitRootLogin = "no" (see
-    # networking.nix) means SSH into root isn't possible either way, and
-    # rebiz already has full passwordless sudo.
     users.users.root.hashedPasswordFile = config.sops.secrets.user_password.path;
 
     security.sudo = {

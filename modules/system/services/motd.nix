@@ -1,8 +1,4 @@
 _: {
-  # Prints a warning banner on interactive login (SSH included) instead of
-  # relying on smartd's mail notifications, which need a mail server this
-  # box doesn't have. Checks failed units, ZFS pool health, disk SMART
-  # status, and the last unattended-upgrade result; silent if all clean.
   flake.modules.nixos.motd = {pkgs, ...}: {
     environment.interactiveShellInit = ''
       ${pkgs.writeShellScript "motd-check" ''

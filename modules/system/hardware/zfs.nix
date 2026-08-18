@@ -1,8 +1,6 @@
 _: {
   flake.modules.nixos.zfs = _: {
     boot.zfs.extraPools = ["data"];
-    # Force-import would mask real pool problems instead of surfacing them;
-    # `nofail` on the mountpoint (_disko.nix) already keeps a missing pool from blocking boot.
     boot.zfs.forceImportRoot = false;
 
     services.zfs = {

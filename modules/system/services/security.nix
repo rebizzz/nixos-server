@@ -74,14 +74,12 @@ _: {
       "net.ipv6.conf.all.accept_redirects" = 0;
       "net.ipv6.conf.all.accept_source_route" = 0;
 
-      # High swappiness is safe here: swap is zram (RAM), no disk seek penalty.
       "vm.swappiness" = 180;
       "vm.page-cluster" = 0;
       "vm.vfs_cache_pressure" = 50;
       "vm.watermark_boost_factor" = 0;
       "vm.watermark_scale_factor" = 125;
 
-      # Absolute (not ratio) dirty thresholds for smooth writeback to the mechanical HDDs.
       "vm.dirty_background_bytes" = 67108864; # 64 MiB
       "vm.dirty_bytes" = 268435456; # 256 MiB
       "vm.dirty_writeback_centisecs" = 1500;

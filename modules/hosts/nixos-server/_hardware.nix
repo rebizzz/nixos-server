@@ -11,7 +11,6 @@
     "usbcore.autosuspend=-1"
     "panic=10"
     "oops=panic"
-    # ARC sized for this box's actual ~5.7 GiB RAM, leaving headroom for Docker/Jellyfin.
     "zfs.zfs_arc_min=536870912" # 512 MiB
     "zfs.zfs_arc_max=2147483648" # 2 GiB
     "zfs.zfs_arc_sys_free=536870912" # 512 MiB headroom

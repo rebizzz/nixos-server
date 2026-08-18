@@ -1,6 +1,4 @@
 _: {
-  # Repo is public, so git+https needs no deploy key. Rollback safety net is
-  # boot.loader.systemd-boot.configurationLimit (base.nix), not handled here.
   flake.modules.nixos.autoupgrade = _: {
     system.autoUpgrade = {
       enable = true;

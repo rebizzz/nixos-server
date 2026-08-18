@@ -16,7 +16,6 @@ _: {
         dates = "weekly";
         options = "--delete-older-than 14d";
       };
-      # Keep the nix daemon from starving foreground services on this 4-thread box.
       daemonCPUSchedPolicy = "idle";
       daemonIOSchedClass = "idle";
     };

@@ -94,9 +94,6 @@
         type = "zpool";
         mode = "mirror";
         mountpoint = "/mnt/data";
-        # Two aging HDDs backing bulk storage only, so a dead/missing pool must
-        # not block boot of the root system on the SSD. disko passes zpool
-        # mountOptions through to the root dataset's fstab entry (nix-community/disko#895).
         mountOptions = ["nofail"];
         options = {
           ashift = "12";
