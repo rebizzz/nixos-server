@@ -20,13 +20,19 @@
     script = ''
       mkdir -p /mnt
       mount -t btrfs -o subvol=/ /dev/disk/by-partlabel/disk-sda-root /mnt
-      btrfs subvolume list -o /mnt/@ |
-        cut -f9 -d' ' |
-        while read -r subvolume; do
-          btrfs subvolume delete "/mnt/$subvolume"
-        done
-      btrfs subvolume delete /mnt/@
-      btrfs subvolume snapshot /mnt/@blank /mnt/@
+      if [ -e /mnt/@ ]; then
+        btrfs subvolume list -o /mnt/@ |
+          cut -f9- -d' ' |
+          while read -r subvolume; do
+            btrfs subvolume delete "/mnt/$subvolume" || true
+          done
+        btrfs subvolume delete /mnt/@
+      fi
+      if [ -e /mnt/@blank ]; then
+        btrfs subvolume snapshot /mnt/@blank /mnt/@
+      else
+        btrfs subvolume create /mnt/@
+      fi
       umount /mnt
     '';
   };

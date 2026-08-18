@@ -10,6 +10,11 @@ _: {
         pools = ["data"];
       };
       trim.enable = false; # mechanical HDDs, not SSDs
+      zed.settings = {
+        ZED_NOTIFY_DATA = true;
+        ZED_NOTIFY_VERBOSE = false;
+        ZED_SCRUB_AFTER_RESILVER = true;
+      };
     };
 
     services.btrfs.autoScrub = {

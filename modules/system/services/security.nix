@@ -64,8 +64,6 @@ _: {
 
       "net.ipv4.ip_forward" = 1;
       "net.ipv6.conf.all.forwarding" = 1;
-      "net.ipv4.conf.all.rp_filter" = 1;
-      "net.ipv4.conf.default.rp_filter" = 1;
       "net.ipv4.icmp_echo_ignore_broadcasts" = 1;
       "net.ipv4.icmp_ignore_bogus_error_responses" = 1;
       "net.ipv4.conf.all.accept_redirects" = 0;
@@ -101,6 +99,13 @@ _: {
       "fs.file-max" = 2097152;
       "fs.inotify.max_user_watches" = 524288;
       "fs.inotify.max_user_instances" = 1024;
+    };
+
+    systemd.services.sshd.serviceConfig.OOMScoreAdjust = -1000;
+
+    systemd.settings.Manager = {
+      DefaultLimitNOFILE = 1048576;
+      DefaultLimitNPROC = 65536;
     };
 
     security.pam.loginLimits = [

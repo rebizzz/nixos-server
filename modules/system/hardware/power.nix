@@ -3,7 +3,7 @@ _: {
     zramSwap = {
       enable = true;
       algorithm = "zstd";
-      memoryPercent = 50;
+      memoryPercent = 100;
       priority = 100;
     };
 
@@ -13,12 +13,15 @@ _: {
       enableSystemSlice = true;
     };
 
+    services.thermald.enable = true;
+    powerManagement.cpuFreqGovernor = "ondemand";
+
     systemd.settings.Manager = {
       RuntimeWatchdogSec = "30s";
       RebootWatchdogSec = "5m";
       KExecWatchdogSec = "5m";
-      DefaultTimeoutStopSec = "30s";
-      DefaultTimeoutStartSec = "60s";
+      DefaultTimeoutStopSec = "15s";
+      DefaultTimeoutStartSec = "30s";
     };
   };
 }

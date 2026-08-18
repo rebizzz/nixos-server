@@ -97,12 +97,13 @@
         mountOptions = ["nofail"];
         options = {
           ashift = "12";
-          autotrim = "on";
         };
         rootFsOptions = {
           compression = "zstd";
           acltype = "posixacl";
           xattr = "sa";
+          dnodesize = "auto";
+          atime = "off";
         };
       };
     };

@@ -15,20 +15,27 @@ _: {
 
     services.tailscale = {
       enable = true;
-      useRoutingFeatures = "server";
+      useRoutingFeatures = "both";
     };
 
+    services.irqbalance.enable = true;
+
     services.udev.extraRules = ''
-      ACTION=="add|change", KERNEL=="sd[bc]", ATTR{queue/rotational}=="1", RUN+="${pkgs.hdparm}/bin/hdparm -B 254 -S 0 /dev/%k"
+      ACTION=="add|change", SUBSYSTEM=="block", ENV{ID_BUS}=="ata", ATTR{queue/rotational}=="1", RUN+="${pkgs.hdparm}/bin/hdparm -B 254 -S 0 /dev/%k"
     '';
 
     services.smartd = {
       enable = true;
       autodetect = false;
-      defaults.autodetected = "-a -o on -S on -n standby,q -s (S/../.././03|L/../../6/04) -W 4,45,55";
       devices = [
-        {device = "/dev/disk/by-id/ata-ST500DM002-1BD142_Z6E0EBEW";}
-        {device = "/dev/disk/by-id/ata-ST3500414CS_6VVEHZ3V";}
+        {
+          device = "/dev/disk/by-id/ata-ST500DM002-1BD142_Z6E0EBEW";
+          options = "-a -o on -S on -n standby,q -s (S/../.././03|L/../../6/04) -W 4,45,55";
+        }
+        {
+          device = "/dev/disk/by-id/ata-ST3500414CS_6VVEHZ3V";
+          options = "-a -o on -S on -n standby,q -s (S/../.././03|L/../../6/04) -W 4,45,55";
+        }
       ];
       notifications.mail.enable = false;
     };
