@@ -12,6 +12,13 @@ _: {
           powersave = false;
           backend = "wpa_supplicant";
         };
+        # TEMP: debug why autoconnect isn't bringing wifi up on its own after
+        # a cold boot (device shows connected/associated in kernel logs, but
+        # required a manual `nmcli con up` twice). Revert once diagnosed.
+        settings."logging" = {
+          level = "DEBUG";
+          domains = "WIFI,DEVICE,CORE,DHCP4,DHCP6,SUPPLICANT";
+        };
         ensureProfiles = {
           environmentFiles = [config.sops.templates."network-manager.env".path];
           profiles.ReBiz = {
