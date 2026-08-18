@@ -26,8 +26,8 @@
     systemd.enableEmergencyMode = false;
 
     environment.systemPackages = with pkgs; [
-      vim
       git
+      nano
       curl
       wget
       btop

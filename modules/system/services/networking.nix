@@ -95,11 +95,7 @@ _: {
       StandardEject=1
     '';
 
-    environment.systemPackages = with pkgs; [
-      iw
-      ethtool
-      usb-modeswitch
-    ];
+    environment.systemPackages = [pkgs.usb-modeswitch];
 
     # NM autoconnect doesn't reliably bring "ReBiz" up on its own: a known
     # upstream race between ensure-profiles and NM's init (nixpkgs#296450).

@@ -20,11 +20,6 @@ _: {
 
     users.users.jellyfin.extraGroups = ["video" "render"];
 
-    environment.systemPackages = with pkgs; [
-      libva-utils
-      intel-gpu-tools
-    ];
-
     preservation.preserveAt."/persistent".directories = [
       "/var/lib/jellyfin"
       "/var/cache/jellyfin"
