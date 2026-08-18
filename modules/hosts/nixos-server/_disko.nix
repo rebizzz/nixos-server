@@ -1,4 +1,4 @@
-{
+_: {
   disko.devices = {
     disk = {
       sda = {
@@ -7,17 +7,19 @@
         content = {
           type = "gpt";
           partitions = {
-            ESP = {
+            esp = {
               priority = 1;
               name = "ESP";
-              start = "1M";
-              end = "1G";
+              size = "1G";
               type = "EF00";
               content = {
                 type = "filesystem";
                 format = "vfat";
                 mountpoint = "/boot";
-                mountOptions = ["umask=0077"];
+                mountOptions = [
+                  "fmask=0077"
+                  "dmask=0077"
+                ];
               };
             };
             root = {
@@ -28,27 +30,27 @@
                 subvolumes = {
                   "@" = {
                     mountpoint = "/";
-                    mountOptions = ["compress=zstd:1" "noatime"];
+                    mountOptions = ["compress=zstd" "noatime"];
                   };
                   "@home" = {
                     mountpoint = "/home";
-                    mountOptions = ["compress=zstd:1" "noatime"];
+                    mountOptions = ["compress=zstd" "noatime"];
                   };
                   "@nix" = {
                     mountpoint = "/nix";
-                    mountOptions = ["compress=zstd:1" "noatime"];
+                    mountOptions = ["compress=zstd" "noatime"];
                   };
                   "@persistent" = {
                     mountpoint = "/persistent";
-                    mountOptions = ["compress=zstd:1" "noatime"];
+                    mountOptions = ["compress=zstd" "noatime"];
                   };
                   "@tmp" = {
                     mountpoint = "/tmp";
-                    mountOptions = ["compress=zstd:1" "noatime"];
+                    mountOptions = ["compress=zstd" "noatime"];
                   };
                   "@log" = {
                     mountpoint = "/var/log";
-                    mountOptions = ["compress=zstd:1" "noatime"];
+                    mountOptions = ["compress=zstd" "noatime"];
                   };
                 };
               };
@@ -104,6 +106,26 @@
           xattr = "sa";
           dnodesize = "auto";
           atime = "off";
+        };
+        datasets = {
+          "media" = {
+            type = "zfs_fs";
+            mountpoint = "/mnt/data/media";
+            mountOptions = ["nofail"];
+            options = {
+              recordsize = "1M";
+            };
+          };
+          "backup" = {
+            type = "zfs_fs";
+            mountpoint = "/mnt/data/backup";
+            mountOptions = ["nofail"];
+          };
+          "storage" = {
+            type = "zfs_fs";
+            mountpoint = "/mnt/data/storage";
+            mountOptions = ["nofail"];
+          };
         };
       };
     };

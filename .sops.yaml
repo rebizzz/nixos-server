@@ -1,7 +1,9 @@
 keys:
-  - &rebiz age1ekr6apc0tp9h0xfjetfsgutrhmwpzkz23uty9v8v4mnvt9dgcczqudr73w
+  - &server age1ekr6apc0tp9h0xfjetfsgutrhmwpzkz23uty9v8v4mnvt9dgcczqudr73w
+  - &laptop age1mj2gjcdespexek6knsgf5qj5ee6kackfcphnfarafgjq79xp8g9sp7dqtq
 creation_rules:
   - path_regex: secrets/.*\.yaml$
     key_groups:
       - age:
-          - *rebiz
+          - *server
+          - *laptop
