@@ -2,6 +2,8 @@ _: {
   flake.modules.nixos.motd = {pkgs, ...}: let
     motdScript = pkgs.writeShellScript "motd-dashboard" ''
       #!/bin/sh
+      [ -n "$PS1" ] || [ -n "$FISH_VERSION" ] || exit 0
+
       c_reset="\033[0m"
       c_bold="\033[1m"
       c_cyan="\033[36m"
@@ -10,6 +12,36 @@ _: {
       c_yellow="\033[33m"
       c_red="\033[31m"
       c_gray="\033[90m"
+
+      pad() {
+        str="$1"
+        target_len=58
+        clean_str=$(printf "%b" "$str" | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGK]//g")
+        visible_len=$(printf "%s" "$clean_str" | wc -m)
+        pad_len=$(( target_len - visible_len ))
+        if [ "$pad_len" -gt 0 ]; then
+          printf "%b%*s" "$str" "$pad_len" ""
+        else
+          printf "%b" "$str"
+        fi
+      }
+
+      draw_bar() {
+        pct=$1
+        filled=$(( (pct * 16) / 100 ))
+        [ "$filled" -gt 16 ] && filled=16
+        unfilled=$(( 16 - filled ))
+        
+        color="$c_green"
+        [ "$pct" -ge 70 ] && color="$c_yellow"
+        [ "$pct" -ge 85 ] && color="$c_red"
+        
+        f_str=""
+        u_str=""
+        for i in $(seq 1 $filled 2>/dev/null); do f_str="█$f_str"; done
+        for i in $(seq 1 $unfilled 2>/dev/null); do u_str="░$u_str"; done
+        printf "%b%s%b%s%b" "$color" "$f_str" "$c_gray" "$u_str" "$c_reset"
+      }
 
       hostname="$(hostname)"
       uptime_str="$(uptime -p 2>/dev/null | sed 's/^up //')"
@@ -37,23 +69,6 @@ _: {
       if [ "$swap_total_mb" -gt 0 ]; then
         swap_pct=$(( (swap_used * 100) / swap_total_mb ))
       fi
-
-      draw_bar() {
-        pct=$1
-        filled=$(( (pct * 16) / 100 ))
-        [ "$filled" -gt 16 ] && filled=16
-        unfilled=$(( 16 - filled ))
-        
-        color="$c_green"
-        [ "$pct" -ge 70 ] && color="$c_yellow"
-        [ "$pct" -ge 85 ] && color="$c_red"
-        
-        f_str=""
-        u_str=""
-        for i in $(seq 1 $filled 2>/dev/null); do f_str="█$f_str"; done
-        for i in $(seq 1 $unfilled 2>/dev/null); do u_str="░$u_str"; done
-        printf "%b%s%b%s%b" "$color" "$f_str" "$c_gray" "$u_str" "$c_reset"
-      }
 
       disk_root_pct=$(df / 2>/dev/null | awk 'NR==2{sub(/%/,"",$5); print $5}')
       disk_root_used=$(df -h / 2>/dev/null | awk 'NR==2{print $3}')
@@ -86,26 +101,26 @@ _: {
       fi
 
       printf "\n"
-      printf "$c_blue  ╭─────────────────────────────────────────────────────────────╮$c_reset\n"
-      printf "  │  $c_bold$c_cyan❄  %s$c_reset (NixOS 26.05 x86_64)%*s│\n" "$hostname" $(( 33 - $(printf "%s" "$hostname" | wc -c) )) ""
-      printf "  │  $c_gray⏱  Uptime:$c_reset   %-45s│\n" "$uptime_str"
-      printf "  │  $c_gray⚡ Load:$c_reset     %-45s│\n" "$load_avg"
-      printf "$c_blue  ├─────────────────────────────────────────────────────────────┤$c_reset\n"
-      printf "  │  $c_gray🌐 LAN IP:$c_reset   %-45s│\n" "$lan_ip"
-      printf "  │  $c_gray🔒 Tailscale:$c_reset %-44s│\n" "$ts_ip"
-      printf "$c_blue  ├─────────────────────────────────────────────────────────────┤$c_reset\n"
-      printf "  │  $c_gray🧠 RAM:$c_reset     [%b] %4dM / %-4dM (%2d%%)     │\n" "$(draw_bar "$mem_pct")" "$mem_used" "$mem_total_mb" "$mem_pct"
-      printf "  │  $c_gray🔄 Swap:$c_reset    [%b] %4dM / %-4dM (%2d%%)     │\n" "$(draw_bar "$swap_pct")" "$swap_used" "$swap_total_mb" "$swap_pct"
-      printf "  │  $c_gray💾 SSD (/):$c_reset [%b] %5s / %-5s (%2d%%)     │\n" "$(draw_bar "$disk_root_pct")" "$disk_root_used" "$disk_root_size" "$disk_root_pct"
+      printf "%b╭──────────────────────────────────────────────────────────╮%b\n" "$c_blue" "$c_reset"
+      printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bSystem:%b      %b%b%s%b %b(NixOS 26.05 x86_64)%b" "$c_gray" "$c_reset" "$c_bold" "$c_cyan" "$hostname" "$c_reset" "$c_gray" "$c_reset")")" "$c_blue" "$c_reset"
+      printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bUptime:%b      %s" "$c_gray" "$c_reset" "$uptime_str")")" "$c_blue" "$c_reset"
+      printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bLoad:%b        %s" "$c_gray" "$c_reset" "$load_avg")")" "$c_blue" "$c_reset"
+      printf "%b├──────────────────────────────────────────────────────────┤%b\n" "$c_blue" "$c_reset"
+      printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bLAN IP:%b      %b%s%b" "$c_gray" "$c_reset" "$c_green" "$lan_ip" "$c_reset")")" "$c_blue" "$c_reset"
+      printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bTailscale:%b   %b%s%b" "$c_gray" "$c_reset" "$c_yellow" "$ts_ip" "$c_reset")")" "$c_blue" "$c_reset"
+      printf "%b├──────────────────────────────────────────────────────────┤%b\n" "$c_blue" "$c_reset"
+      printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bRAM:%b         [%b] %4dM / %-4dM (%2d%%)" "$c_gray" "$c_reset" "$(draw_bar "$mem_pct")" "$mem_used" "$mem_total_mb" "$mem_pct")")" "$c_blue" "$c_reset"
+      printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bSwap:%b        [%b] %4dM / %-4dM (%2d%%)" "$c_gray" "$c_reset" "$(draw_bar "$swap_pct")" "$swap_used" "$swap_total_mb" "$swap_pct")")" "$c_blue" "$c_reset"
+      printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bSSD (/):%b     [%b] %5s / %-5s (%2d%%)" "$c_gray" "$c_reset" "$(draw_bar "$disk_root_pct")" "$disk_root_used" "$disk_root_size" "$disk_root_pct")")" "$c_blue" "$c_reset"
       if [ -n "$disk_data_used" ]; then
-        printf "  │  $c_gray🗄️  ZFS:$c_reset     [%b] %5s / %-5s (%2d%%)     │\n" "$(draw_bar "$disk_data_pct")" "$disk_data_used" "$disk_data_size" "$disk_data_pct"
+        printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bZFS (data):%b  [%b] %5s / %-5s (%2d%%)" "$c_gray" "$c_reset" "$(draw_bar "$disk_data_pct")" "$disk_data_used" "$disk_data_size" "$disk_data_pct")")" "$c_blue" "$c_reset"
       fi
-      printf "$c_blue  ├─────────────────────────────────────────────────────────────┤$c_reset\n"
-      printf "  │  $c_gray🐳 Docker:$c_reset  %-45s│\n" "$docker_count container(s) running"
+      printf "%b├──────────────────────────────────────────────────────────┤%b\n" "$c_blue" "$c_reset"
+      printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%bDocker:%b      %d container(s) running" "$c_gray" "$c_reset" "$docker_count")")" "$c_blue" "$c_reset"
       if [ -z "$issues" ]; then
-        printf "  │  $c_green✓ System, drives & ZFS pools healthy$c_reset                       │\n"
+        printf "%b│%b  %s  %b│%b\n" "$c_blue" "$c_reset" "$(pad "$(printf "%b✓ System, drives & ZFS pools healthy%b" "$c_green" "$c_reset")")" "$c_blue" "$c_reset"
       fi
-      printf "$c_blue  ╰─────────────────────────────────────────────────────────────╯$c_reset\n"
+      printf "%b╰──────────────────────────────────────────────────────────╯%b\n" "$c_blue" "$c_reset"
 
       if [ -n "$issues" ]; then
         printf "%b\n\n" "$issues"
