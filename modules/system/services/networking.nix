@@ -69,8 +69,11 @@ _: {
         }
       ];
       settings = {
-        PermitRootLogin = "prohibit-password";
-        PasswordAuthentication = true;
+        # rebiz already has full passwordless sudo, so a second privileged
+        # SSH entry point (root) and a password-guessable one both just add
+        # attack surface without adding capability.
+        PermitRootLogin = "no";
+        PasswordAuthentication = false;
         KbdInteractiveAuthentication = false;
         X11Forwarding = false;
       };

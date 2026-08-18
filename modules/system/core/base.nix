@@ -31,6 +31,7 @@
       curl
       wget
       btop
+      fastfetch
       tmux
       pciutils
       usbutils
