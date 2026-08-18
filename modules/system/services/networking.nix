@@ -10,7 +10,7 @@ _: {
         enable = true;
         wifi = {
           powersave = false;
-          backend = "iwd";
+          backend = "wpa_supplicant";
         };
         ensureProfiles = {
           environmentFiles = [config.sops.templates."network-manager.env".path];
@@ -42,10 +42,6 @@ _: {
         checkReversePath = "loose";
       };
     };
-
-    # NM's iwd wifi.backend talks to the system iwd daemon over D-Bus instead
-    # of spawning wpa_supplicant per-device; iwd must actually be running.
-    networking.wireless.iwd.enable = true;
 
     services.avahi = {
       enable = true;
