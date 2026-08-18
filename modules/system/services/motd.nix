@@ -1,9 +1,6 @@
 _: {
   flake.modules.nixos.motd = {pkgs, ...}: let
     motdScript = pkgs.writeShellScript "motd-dashboard" ''
-      #!/bin/sh
-      [ -n "$PS1" ] || [ -n "$FISH_VERSION" ] || exit 0
-
       c_reset="\033[0m"
       c_bold="\033[1m"
       c_cyan="\033[36m"
@@ -54,7 +51,10 @@ _: {
       ts_ip="$(${pkgs.tailscale}/bin/tailscale ip -4 2>/dev/null)"
       [ -n "$ts_ip" ] || ts_ip="disconnected"
 
-      read -r mem_total mem_free mem_avail < <(awk '/MemTotal/{t=$2}/MemFree/{f=$2}/MemAvailable/{a=$2}END{print t,f,a}' /proc/meminfo)
+      mem_total=$(awk '/MemTotal/{print $2}' /proc/meminfo 2>/dev/null)
+      mem_avail=$(awk '/MemAvailable/{print $2}' /proc/meminfo 2>/dev/null)
+      [ -n "$mem_total" ] || mem_total=1
+      [ -n "$mem_avail" ] || mem_avail=0
       mem_used=$(( (mem_total - mem_avail) / 1024 ))
       mem_total_mb=$(( mem_total / 1024 ))
       mem_pct=0
@@ -62,7 +62,10 @@ _: {
         mem_pct=$(( (mem_used * 100) / mem_total_mb ))
       fi
 
-      read -r swap_total swap_free < <(awk '/SwapTotal/{t=$2}/SwapFree/{f=$2}END{print t,f}' /proc/meminfo)
+      swap_total=$(awk '/SwapTotal/{print $2}' /proc/meminfo 2>/dev/null)
+      swap_free=$(awk '/SwapFree/{print $2}' /proc/meminfo 2>/dev/null)
+      [ -n "$swap_total" ] || swap_total=1
+      [ -n "$swap_free" ] || swap_free=1
       swap_used=$(( (swap_total - swap_free) / 1024 ))
       swap_total_mb=$(( swap_total / 1024 ))
       swap_pct=0
@@ -73,6 +76,7 @@ _: {
       disk_root_pct=$(df / 2>/dev/null | awk 'NR==2{sub(/%/,"",$5); print $5}')
       disk_root_used=$(df -h / 2>/dev/null | awk 'NR==2{print $3}')
       disk_root_size=$(df -h / 2>/dev/null | awk 'NR==2{print $2}')
+      [ -n "$disk_root_pct" ] || disk_root_pct=0
 
       disk_data_pct=$(df /mnt/data 2>/dev/null | awk 'NR==2{sub(/%/,"",$5); print $5}')
       disk_data_used=$(df -h /mnt/data 2>/dev/null | awk 'NR==2{print $3}')
