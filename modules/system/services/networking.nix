@@ -2,10 +2,12 @@ _: {
   flake.modules.nixos.networking = {
     config,
     pkgs,
+    lib,
+    hostVars,
     ...
   }: {
     networking = {
-      hostName = "nixos-server";
+      hostName = hostVars.hostName;
       networkmanager = {
         enable = true;
         wifi = {
@@ -14,16 +16,16 @@ _: {
         };
         ensureProfiles = {
           environmentFiles = [config.sops.templates."network-manager.env".path];
-          profiles.ReBiz = {
+          profiles.${hostVars.wifi.ssid} = {
             connection = {
-              id = "ReBiz";
+              id = hostVars.wifi.ssid;
               type = "wifi";
               autoconnect = true;
               autoconnect-priority = 100;
             };
             wifi = {
               mode = "infrastructure";
-              ssid = "ReBiz";
+              ssid = hostVars.wifi.ssid;
             };
             wifi-security = {
               key-mgmt = "wpa-psk";
@@ -106,7 +108,7 @@ _: {
           }
           for _ in $(seq 1 30); do
             is_connected && exit 0
-            ${pkgs.networkmanager}/bin/nmcli connection up ReBiz >/dev/null 2>&1 || true
+            ${pkgs.networkmanager}/bin/nmcli connection up ${lib.escapeShellArg hostVars.wifi.ssid} >/dev/null 2>&1 || true
             is_connected && exit 0
             sleep 1
           done

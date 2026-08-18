@@ -1,96 +1,92 @@
-_: {
-  disko.devices = {
-    disk = {
-      sda = {
-        type = "disk";
-        device = "/dev/sda";
+{
+  hostVars,
+  lib,
+  ...
+}: let
+  mirrorDisk = dev: {
+    type = "disk";
+    device = dev;
+    content = {
+      type = "gpt";
+      partitions.zfs = {
+        size = "100%";
         content = {
-          type = "gpt";
-          partitions = {
-            esp = {
-              priority = 1;
-              name = "ESP";
-              size = "1G";
-              type = "EF00";
-              content = {
-                type = "filesystem";
-                format = "vfat";
-                mountpoint = "/boot";
-                mountOptions = [
-                  "fmask=0077"
-                  "dmask=0077"
-                ];
+          type = "zfs";
+          pool = "data";
+        };
+      };
+    };
+  };
+
+  mirrorDisks = lib.listToAttrs (lib.imap0
+    (i: dev: {
+      name = "zfsMirror${builtins.toString i}";
+      value = mirrorDisk dev;
+    })
+    hostVars.disks.zfsMirror);
+in {
+  disko.devices = {
+    disk =
+      {
+        system = {
+          type = "disk";
+          device = hostVars.disks.system;
+          content = {
+            type = "gpt";
+            partitions = {
+              esp = {
+                priority = 1;
+                name = "ESP";
+                size = "1G";
+                type = "EF00";
+                content = {
+                  type = "filesystem";
+                  format = "vfat";
+                  mountpoint = "/boot";
+                  mountOptions = [
+                    "fmask=0077"
+                    "dmask=0077"
+                  ];
+                };
               };
-            };
-            root = {
-              size = "100%";
-              content = {
-                type = "btrfs";
-                extraArgs = ["-f"];
-                subvolumes = {
-                  "@" = {
-                    mountpoint = "/";
-                    mountOptions = ["compress=zstd" "noatime"];
-                  };
-                  "@home" = {
-                    mountpoint = "/home";
-                    mountOptions = ["compress=zstd" "noatime"];
-                  };
-                  "@nix" = {
-                    mountpoint = "/nix";
-                    mountOptions = ["compress=zstd" "noatime"];
-                  };
-                  "@persistent" = {
-                    mountpoint = "/persistent";
-                    mountOptions = ["compress=zstd" "noatime"];
-                  };
-                  "@tmp" = {
-                    mountpoint = "/tmp";
-                    mountOptions = ["compress=zstd" "noatime"];
-                  };
-                  "@log" = {
-                    mountpoint = "/var/log";
-                    mountOptions = ["compress=zstd" "noatime"];
+              root = {
+                size = "100%";
+                content = {
+                  type = "btrfs";
+                  extraArgs = ["-f"];
+                  subvolumes = {
+                    "@" = {
+                      mountpoint = "/";
+                      mountOptions = ["compress=zstd" "noatime"];
+                    };
+                    "@home" = {
+                      mountpoint = "/home";
+                      mountOptions = ["compress=zstd" "noatime"];
+                    };
+                    "@nix" = {
+                      mountpoint = "/nix";
+                      mountOptions = ["compress=zstd" "noatime"];
+                    };
+                    "@persistent" = {
+                      mountpoint = "/persistent";
+                      mountOptions = ["compress=zstd" "noatime"];
+                    };
+                    "@tmp" = {
+                      mountpoint = "/tmp";
+                      mountOptions = ["compress=zstd" "noatime"];
+                    };
+                    "@log" = {
+                      mountpoint = "/var/log";
+                      mountOptions = ["compress=zstd" "noatime"];
+                    };
                   };
                 };
               };
             };
           };
         };
-      };
-      sdb = {
-        type = "disk";
-        device = "/dev/sdb";
-        content = {
-          type = "gpt";
-          partitions = {
-            zfs = {
-              size = "100%";
-              content = {
-                type = "zfs";
-                pool = "data";
-              };
-            };
-          };
-        };
-      };
-      sdc = {
-        type = "disk";
-        device = "/dev/sdc";
-        content = {
-          type = "gpt";
-          partitions = {
-            zfs = {
-              size = "100%";
-              content = {
-                type = "zfs";
-                pool = "data";
-              };
-            };
-          };
-        };
-      };
-    };
+      }
+      // mirrorDisks;
     zpool = {
       data = {
         type = "zpool";

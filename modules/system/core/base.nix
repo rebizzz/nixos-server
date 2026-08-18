@@ -1,6 +1,10 @@
 {inputs, ...}: {
   # pulls in every other flake.modules.nixos.* except "media" (opt-in per host)
-  flake.modules.nixos.base = {pkgs, ...}: {
+  flake.modules.nixos.base = {
+    pkgs,
+    hostVars,
+    ...
+  }: {
     imports =
       [
         inputs.disko.nixosModules.disko
@@ -9,7 +13,7 @@
       ]
       ++ builtins.attrValues (builtins.removeAttrs inputs.self.modules.nixos ["base" "media"]);
 
-    time.timeZone = "Asia/Kolkata";
+    time.timeZone = hostVars.timeZone;
     i18n.defaultLocale = "en_US.UTF-8";
 
     boot.loader = {

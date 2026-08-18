@@ -1,5 +1,5 @@
 {
-  description = "NixOS Flake configuration for nixos-server (Btrfs SSD + Ephemeral Root + ZFS storage array)";
+  description = "NixOS flake template (flake-parts + disko + nixos-anywhere + deploy-rs): Btrfs SSD + Ephemeral Root + ZFS storage array, one nixosConfiguration per host under modules/hosts/";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
@@ -19,6 +19,10 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
     import-tree.url = "github:vic/import-tree";
+    deploy-rs = {
+      url = "github:serokell/deploy-rs";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs:

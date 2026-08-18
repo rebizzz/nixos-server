@@ -2,6 +2,7 @@
   lib,
   pkgs,
   modulesPath,
+  hostVars,
   ...
 }: {
   imports = [
@@ -72,7 +73,7 @@
   hardware.cpu.intel.updateMicrocode = true;
   hardware.wirelessRegulatoryDatabase = true;
 
-  networking.hostId = "8425e349";
+  networking.hostId = hostVars.hostId;
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 }

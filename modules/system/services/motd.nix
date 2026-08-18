@@ -40,11 +40,11 @@ _: {
         filled=$(( (pct * 16) / 100 ))
         [ "$filled" -gt 16 ] && filled=16
         unfilled=$(( 16 - filled ))
-        
+
         color="$c_green"
         [ "$pct" -ge 70 ] && color="$c_yellow"
         [ "$pct" -ge 85 ] && color="$c_red"
-        
+
         f_str=""
         u_str=""
         for i in $(seq 1 $filled 2>/dev/null); do f_str="█$f_str"; done
@@ -53,7 +53,7 @@ _: {
       }
 
       hostname="$(hostname)"
-      
+
       uptime_sec=$(cut -d. -f1 /proc/uptime 2>/dev/null)
       [ -n "$uptime_sec" ] || uptime_sec=0
       days=$(( uptime_sec / 86400 ))
@@ -68,10 +68,10 @@ _: {
       fi
 
       load_avg="$(awk '{print $1 ", " $2 ", " $3}' /proc/loadavg 2>/dev/null)"
-      
+
       lan_ip="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}')"
       [ -n "$lan_ip" ] || lan_ip="offline"
-      
+
       ts_ip="$(${pkgs.tailscale}/bin/tailscale ip -4 2>/dev/null)"
       [ -n "$ts_ip" ] || ts_ip="disconnected"
 

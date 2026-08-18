@@ -55,26 +55,94 @@ Data Pool (450 GB ZFS Mirror, 2x Seagate HDDs)
 ├── flake.nix                       -> Entrypoint using flake-parts & import-tree
 ├── secrets/                        -> SOPS-encrypted secrets (secrets.yaml)
 └── modules/
-    ├── hosts/nixos-server/         -> Hardware definitions and host wiring
-    │   ├── default.nix             -> Host module registry
-    │   ├── _disko.nix              -> Declarative disk partitioning
-    │   └── _hardware.nix           -> CPU tuning, initrd rollback, ZFS parameters
+    ├── flake/                      -> flake-parts wiring, devShell, deploy-rs checks
+    ├── hosts/nixos-server/         -> One directory per machine
+    │   ├── default.nix             -> Registers nixosConfigurations.<host> + deploy.nodes.<host>
+    │   ├── _host.nix                -> All host-specific values (disks, hostId, wifi, IP, ...)
+    │   ├── _disko.nix              -> Declarative disk partitioning (reads _host.nix)
+    │   └── _hardware.nix           -> CPU tuning, initrd rollback, ZFS parameters, kernel modules
     └── system/
         ├── core/                   -> Base system, bootloader, users, auto-updates
         ├── hardware/               -> ZFS, graphics acceleration, power & thermals
         └── services/               -> Networking, SSH, Cockpit, MOTD, Docker
 ```
 
+Files prefixed with `_` are plain data/host modules, deliberately excluded from
+`import-tree`'s auto-discovery (which otherwise treats every `.nix` file under
+`modules/` as a flake-parts module) — they're wired in explicitly instead.
+
+---
+
+## 🖥️ Adding a new host / reinstalling this one (nixos-anywhere)
+
+This flake is a template: every machine gets its own `modules/hosts/<name>/`
+directory, and everything that differs between machines (disks, `hostId`,
+wifi SSID, LAN IP, SMART device serials, timezone) lives in one file:
+`_host.nix`.
+
+1. **Copy the host directory:**
+   ```bash
+   cp -r modules/hosts/nixos-server modules/hosts/<new-host>
+   ```
+2. **Edit `_host.nix`** — set `hostName`, a fresh `hostId`
+   (`head -c4 /dev/urandom | od -A none -t x4`), the real disk devices,
+   wifi SSID, LAN IP, and SMART device paths for the new machine.
+3. **Regenerate hardware detection** from a live ISO booted on the target,
+   then copy the relevant bits (`boot.initrd.availableKernelModules`,
+   `boot.kernelModules`, CPU vendor) into `_hardware.nix`:
+   ```bash
+   nixos-anywhere --generate-hardware-config nixos-generate-config \
+     ./modules/hosts/<new-host>/_hardware-generated.nix root@<target-ip>
+   ```
+4. **Install remotely with [nixos-anywhere](https://github.com/nix-community/nixos-anywhere)**
+   from your laptop, targeting a machine booted off any Linux live
+   environment with SSH (or via kexec on an already-running NixOS):
+   ```bash
+   nix run github:nix-community/nixos-anywhere -- \
+     --flake .#<new-host> \
+     --extra-files ./secrets/extra-files \
+     root@<target-ip>
+   ```
+   `--extra-files` solves the chicken-and-egg secrets problem: put the host's
+   sops age key at `./secrets/extra-files/persistent/etc/sops/age/keys.txt`
+   (mode 600) before running the command, and nixos-anywhere copies it into
+   place *before* the first boot, so `sops-nix` can decrypt `user_password`
+   etc. immediately. Delete the local copy afterwards; the file only needs to
+   exist transiently on your laptop.
+5. **Add the new age key** to `.sops.yaml` and run `sops updatekeys secrets/secrets.yaml`.
+
+For the existing `nixos-server` box specifically, the same command re-installs
+it from scratch (disko wipes and repartitions the disks it's told to):
+```bash
+nix run github:nix-community/nixos-anywhere -- \
+  --flake .#nixos-server --extra-files ./secrets/extra-files root@<ip>
+```
+
+`install.sh` is kept as a fallback for running the install *locally* on a
+low-RAM live ISO (it sets up zram swap and expands tmpfs before invoking
+disko + `nixos-install`) — prefer nixos-anywhere when you can SSH in.
+
 ---
 
 ## 🛠️ Common Operations
 
-### Deploy changes from your computer:
+### Deploy changes with deploy-rs (recommended):
 ```bash
-# Check syntax first
+nix develop   # brings deploy-rs, sops, nixos-anywhere into PATH
+
+# Check syntax + deploy-rs schema first
 nix flake check
 
-# Deploy to server over SSH
+# Deploy to the server over SSH (interactive confirmation + auto-rollback
+# if the new generation doesn't check in within ~30s)
+deploy .#nixos-server
+```
+`deploy.nodes.nixos-server` (in `modules/hosts/nixos-server/default.nix`)
+targets `rebiz@nixos-server.local` as `root`, with `magicRollback` and
+`autoRollback` enabled — a bad deploy reverts itself automatically.
+
+### Deploy changes with plain nixos-rebuild (fallback):
+```bash
 nixos-rebuild switch --flake .#nixos-server --target-host rebiz@nixos-server.local --use-remote-sudo
 ```
 

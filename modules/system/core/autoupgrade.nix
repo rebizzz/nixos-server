@@ -1,8 +1,8 @@
 _: {
-  flake.modules.nixos.autoupgrade = _: {
+  flake.modules.nixos.autoupgrade = {hostVars, ...}: {
     system.autoUpgrade = {
       enable = true;
-      flake = "git+https://github.com/rebizzz/nixos-server.git#nixos-server";
+      flake = "${hostVars.flakeUri}#${hostVars.hostName}";
       dates = "04:00";
       randomizedDelaySec = "45min";
       allowReboot = true;

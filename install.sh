@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+REPO="${REPO:-github:rebizzz/nixos-server}"
+HOST="${HOST:-nixos-server}"
+
 echo "=========================================="
-echo " NixOS Server One-Shot Installer"
+echo " NixOS One-Shot Installer ($HOST)"
 echo "=========================================="
 
 # 1. Enable 8GB zram0 swap to prevent OOM
@@ -41,12 +44,12 @@ echo ""
 echo "[2/4] Partitioning & formatting drives via Disko..."
 nix --extra-experimental-features "nix-command flakes" run github:nix-community/disko -- \
   --mode disko \
-  --flake github:rebizzz/nixos-server#nixos-server
+  --flake "$REPO#$HOST"
 
 # 3. Install NixOS
 echo ""
-echo "[3/4] Installing NixOS from github:rebizzz/nixos-server..."
-nixos-install --flake github:rebizzz/nixos-server#nixos-server --no-root-passwd --no-channel-copy
+echo "[3/4] Installing NixOS from $REPO#$HOST..."
+nixos-install --flake "$REPO#$HOST" --no-root-passwd --no-channel-copy
 
 # 4. Finish & Reboot
 echo ""

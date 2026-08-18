@@ -2,3 +2,4 @@ result
 .nix-gc*
 *.swp
 *~
+secrets/extra-files/

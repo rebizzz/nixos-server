@@ -1,9 +1,11 @@
 keys:
   - &server age1ekr6apc0tp9h0xfjetfsgutrhmwpzkz23uty9v8v4mnvt9dgcczqudr73w
+  - &server_sshkey age1q5lxpda8ece50lgn4yzughdvs64ugq995nv0ktvamlqaqmz9qassexdl8a
   - &laptop age1mj2gjcdespexek6knsgf5qj5ee6kackfcphnfarafgjq79xp8g9sp7dqtq
 creation_rules:
   - path_regex: secrets/.*\.yaml$
     key_groups:
       - age:
           - *server
+          - *server_sshkey
           - *laptop

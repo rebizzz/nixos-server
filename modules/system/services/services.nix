@@ -2,6 +2,7 @@ _: {
   flake.modules.nixos.services = {
     pkgs,
     lib,
+    hostVars,
     ...
   }: {
     services.cockpit = {
@@ -9,14 +10,20 @@ _: {
       port = 9090;
       settings.WebService = {
         AllowUnencrypted = true;
-        Origins = lib.mkForce "https://localhost:9090 http://localhost:9090 http://nixos-server.local:9090 https://nixos-server.local:9090 http://10.42.0.42:9090 https://10.42.0.42:9090";
+        Origins = lib.mkForce (lib.concatStringsSep " " [
+          "https://localhost:9090"
+          "http://localhost:9090"
+          "http://${hostVars.hostName}.local:9090"
+          "https://${hostVars.hostName}.local:9090"
+          "http://${hostVars.network.lanIp}:9090"
+          "https://${hostVars.network.lanIp}:9090"
+        ]);
       };
     };
 
     environment.systemPackages = [
       pkgs.cockpit
     ];
-
 
     services.tailscale = {
       enable = true;
@@ -32,16 +39,7 @@ _: {
     services.smartd = {
       enable = true;
       autodetect = false;
-      devices = [
-        {
-          device = "/dev/disk/by-id/ata-ST500DM002-1BD142_Z6E0EBEW";
-          options = "-a -o on -S on -n standby,q -s (S/../.././03|L/../../6/04) -W 4,45,55";
-        }
-        {
-          device = "/dev/disk/by-id/ata-ST3500414CS_6VVEHZ3V";
-          options = "-a -o on -S on -n standby,q -s (S/../.././03|L/../../6/04) -W 4,45,55";
-        }
-      ];
+      devices = hostVars.smartDevices;
       notifications.mail.enable = false;
     };
 
