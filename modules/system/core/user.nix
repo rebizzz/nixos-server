@@ -6,7 +6,12 @@ _: {
   }: {
     users.mutableUsers = false;
 
-    programs.fish.enable = true;
+    programs.fish = {
+      enable = true;
+      interactiveShellInit = ''
+        set -g fish_greeting
+      '';
+    };
 
     users.users.rebiz = {
       isNormalUser = true;
