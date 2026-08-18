@@ -120,9 +120,16 @@ _: {
       after = ["NetworkManager.service"];
       serviceConfig = {
         Type = "oneshot";
+        # systemd services get a minimal PATH, so stick to bash builtins —
+        # no awk/grep/cut — plus nmcli's absolute store path.
         ExecStart = pkgs.writeShellScript "wifi-autoconnect" ''
-          state=$(${pkgs.networkmanager}/bin/nmcli -t -f TYPE,STATE device status | awk -F: '$1=="wifi"{print $2; exit}')
-          if [ "$state" != "connected" ]; then
+          connected=0
+          while IFS=: read -r type state _; do
+            if [ "$type" = wifi ] && [ "$state" = connected ]; then
+              connected=1
+            fi
+          done < <(${pkgs.networkmanager}/bin/nmcli -t -f TYPE,STATE device status)
+          if [ "$connected" != 1 ]; then
             ${pkgs.networkmanager}/bin/nmcli connection up ReBiz || true
           fi
         '';
