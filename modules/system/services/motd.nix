@@ -13,6 +13,7 @@ _: {
 
       hostname="$(hostname)"
       uptime_str="$(uptime -p 2>/dev/null | sed 's/^up //')"
+      [ -n "$uptime_str" ] || uptime_str="just booted"
       load_avg="$(awk '{print $1 ", " $2 ", " $3}' /proc/loadavg 2>/dev/null)"
       
       lan_ip="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}')"
@@ -87,11 +88,11 @@ _: {
       printf "\n"
       printf "$c_blue  ╭─────────────────────────────────────────────────────────────╮$c_reset\n"
       printf "  │  $c_bold$c_cyan❄  %s$c_reset (NixOS 26.05 x86_64)%*s│\n" "$hostname" $(( 33 - $(printf "%s" "$hostname" | wc -c) )) ""
-      printf "  │  $c_gray⏱  Uptime:$c_reset %-47s│\n" "$uptime_str"
-      printf "  │  $c_gray⚡ Load:$c_reset   %-47s│\n" "$load_avg"
+      printf "  │  $c_gray⏱  Uptime:$c_reset   %-45s│\n" "$uptime_str"
+      printf "  │  $c_gray⚡ Load:$c_reset     %-45s│\n" "$load_avg"
       printf "$c_blue  ├─────────────────────────────────────────────────────────────┤$c_reset\n"
-      printf "  │  $c_gray🌐 LAN IP:$c_reset      %-43s│\n" "$lan_ip"
-      printf "  │  $c_gray🔒 Tailscale:$c_reset   %-43s│\n" "$ts_ip"
+      printf "  │  $c_gray🌐 LAN IP:$c_reset   %-45s│\n" "$lan_ip"
+      printf "  │  $c_gray🔒 Tailscale:$c_reset %-44s│\n" "$ts_ip"
       printf "$c_blue  ├─────────────────────────────────────────────────────────────┤$c_reset\n"
       printf "  │  $c_gray🧠 RAM:$c_reset     [%b] %4dM / %-4dM (%2d%%)     │\n" "$(draw_bar "$mem_pct")" "$mem_used" "$mem_total_mb" "$mem_pct"
       printf "  │  $c_gray🔄 Swap:$c_reset    [%b] %4dM / %-4dM (%2d%%)     │\n" "$(draw_bar "$swap_pct")" "$swap_used" "$swap_total_mb" "$swap_pct"
@@ -100,7 +101,7 @@ _: {
         printf "  │  $c_gray🗄️  ZFS:$c_reset     [%b] %5s / %-5s (%2d%%)     │\n" "$(draw_bar "$disk_data_pct")" "$disk_data_used" "$disk_data_size" "$disk_data_pct"
       fi
       printf "$c_blue  ├─────────────────────────────────────────────────────────────┤$c_reset\n"
-      printf "  │  $c_gray🐳 Docker:$c_reset  %-47s│\n" "$docker_count container(s) running"
+      printf "  │  $c_gray🐳 Docker:$c_reset  %-45s│\n" "$docker_count container(s) running"
       if [ -z "$issues" ]; then
         printf "  │  $c_green✓ System, drives & ZFS pools healthy$c_reset                       │\n"
       fi
