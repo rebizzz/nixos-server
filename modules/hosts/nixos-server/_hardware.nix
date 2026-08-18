@@ -14,7 +14,7 @@
     before = ["sysroot.mount"];
     unitConfig.DefaultDependencies = "no";
     serviceConfig.Type = "oneshot";
-    path = [pkgs.btrfs-progs];
+    path = [pkgs.btrfs-progs pkgs.coreutils pkgs.util-linux];
     script = ''
       mkdir -p /mnt
       mount -o subvol=/ /dev/disk/by-partlabel/disk-sda-root /mnt
