@@ -11,13 +11,15 @@
   boot.initrd.systemd.services.rollback-root = {
     description = "Roll back / to a blank btrfs snapshot";
     wantedBy = ["initrd.target"];
+    after = ["dev-disk-by\\x2dpartlabel-disk\\x2dsda\\x2droot.device"];
+    requires = ["dev-disk-by\\x2dpartlabel-disk\\x2dsda\\x2droot.device"];
     before = ["sysroot.mount"];
     unitConfig.DefaultDependencies = "no";
     serviceConfig.Type = "oneshot";
     path = [pkgs.btrfs-progs pkgs.coreutils pkgs.util-linux];
     script = ''
       mkdir -p /mnt
-      mount -o subvol=/ /dev/disk/by-partlabel/disk-sda-root /mnt
+      mount -t btrfs -o subvol=/ /dev/disk/by-partlabel/disk-sda-root /mnt
       btrfs subvolume list -o /mnt/@ |
         cut -f9 -d' ' |
         while read -r subvolume; do
