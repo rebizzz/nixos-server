@@ -12,13 +12,6 @@ _: {
           powersave = false;
           backend = "wpa_supplicant";
         };
-        # TEMP: debug why autoconnect isn't bringing wifi up on its own after
-        # a cold boot (device shows connected/associated in kernel logs, but
-        # required a manual `nmcli con up` twice). Revert once diagnosed.
-        settings."logging" = {
-          level = "DEBUG";
-          domains = "WIFI,DEVICE,CORE,DHCP4,DHCP6,SUPPLICANT";
-        };
         ensureProfiles = {
           environmentFiles = [config.sops.templates."network-manager.env".path];
           profiles.ReBiz = {
@@ -112,5 +105,38 @@ _: {
       ethtool
       usb-modeswitch
     ];
+
+    # NetworkManager's own autoconnect policy reliably fails to bring the
+    # declarative "ReBiz" profile up after boot/restart (confirmed via debug
+    # logs: it scans successfully every cycle but never proceeds past
+    # 'autoactivate' — only an explicit `nmcli connection up` clears it).
+    # This is a known, still-open upstream race between
+    # NetworkManager-ensure-profiles.service and NM's own init/autoconnect
+    # pass (NixOS/nixpkgs#296450) — the documented workaround is exactly
+    # `nmcli connection reload`/`up` after boot, so automate that instead of
+    # waiting on an upstream fix.
+    systemd.services.wifi-autoconnect = {
+      description = "Ensure the wifi connection comes up (NM autoconnect workaround)";
+      after = ["NetworkManager.service"];
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = pkgs.writeShellScript "wifi-autoconnect" ''
+          state=$(${pkgs.networkmanager}/bin/nmcli -t -f TYPE,STATE device status | awk -F: '$1=="wifi"{print $2; exit}')
+          if [ "$state" != "connected" ]; then
+            ${pkgs.networkmanager}/bin/nmcli connection up ReBiz || true
+          fi
+        '';
+      };
+    };
+
+    systemd.timers.wifi-autoconnect = {
+      description = "Periodically ensure the wifi connection is up";
+      wantedBy = ["timers.target"];
+      timerConfig = {
+        OnBootSec = "30s";
+        OnUnitActiveSec = "1min";
+        Unit = "wifi-autoconnect.service";
+      };
+    };
   };
 }
