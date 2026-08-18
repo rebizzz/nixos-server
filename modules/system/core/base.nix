@@ -23,6 +23,10 @@
 
     systemd.enableEmergencyMode = false;
 
+    systemd.tmpfiles.rules = [
+      "L+ /data - - - - /mnt/data"
+    ];
+
     environment.systemPackages = with pkgs; [
       git
       nano
@@ -38,6 +42,9 @@
       hdparm
       smartmontools
       lm_sensors
+      nh
+      nix-output-monitor
+      nvd
     ];
 
     system.stateVersion = "26.05";

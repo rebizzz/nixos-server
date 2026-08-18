@@ -56,6 +56,7 @@
     "rtw88_core"
     "rtw88_usb"
     "btusb"
+    "iTCO_wdt"
   ];
   boot.extraModulePackages = [];
 
