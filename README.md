@@ -7,10 +7,10 @@ NixOS configuration for a headless home server / homelab. Built with Flakes, `fl
 | Component | Details |
 |---|---|
 | CPU | Intel Core i3-3220 @ 3.30GHz (Ivy Bridge, 4T) |
-| RAM | ~5.7 GiB — ZFS ARC/zram tunables in this repo are sized for this |
+| RAM | ~5.7 GiB (ZFS ARC/zram tunables in this repo are sized for this) |
 | Boot | UEFI |
-| System SSD | `/dev/sda` — 120GB (Btrfs root) |
-| Data Pool | `/dev/sdb` + `/dev/sdc` — 2× 500GB HDD ZFS Mirror (`data`) |
+| System SSD | `/dev/sda`, 120GB (Btrfs root) |
+| Data Pool | `/dev/sdb` + `/dev/sdc`, 2× 500GB HDD ZFS Mirror (`data`) |
 | Network | Realtek RTL810xE Ethernet + Realtek 802.11ac USB Wi-Fi |
 | Hostname | `nixos-server` / `nixos-server.local` (mDNS) |
 | LAN IP | `10.42.0.42` |
@@ -55,24 +55,25 @@ nixos-config/
 
 - **Btrfs root** with ephemeral `/` (wiped on reboot), opt-in state at `/persistent`
 - **ZFS mirror pool** (`data`) with monthly scrubs, staggered Btrfs scrubs, and Sanoid automated snapshots
-- **ZFS ARC** capped at 2 GiB / min 512 MiB — sized for the real ~5.7 GiB of RAM on this box, not a generic default
+- **ZFS ARC** capped at 2 GiB / min 512 MiB, sized for the real ~5.7 GiB of RAM on this box, not a generic default
 - **USB Wi-Fi auto-modeswitch**: the dongle boots into a factory CD-ROM mode and is auto-ejected into real NIC mode via udev, no manual `usb-modeswitch` needed
-- **zram** compressed swap (50% of RAM) — protects the SSD from swap wear
+- **Wi-Fi self-heal**: a systemd timer checks every minute (first check ~1s after boot, retried every 1s for up to 30s) that Wi-Fi is actually connected and brings it up if not. Works around a known NixOS/nixpkgs upstream race (nixpkgs#296450) where `NetworkManager-ensure-profiles` can beat NetworkManager's own autoconnect pass
+- **zram** compressed swap (50% of RAM), protects the SSD from swap wear
 - **Tailscale** mesh VPN, **Cockpit** web console (`:9090`), **Docker** with weekly auto-prune
-- **mDNS** via Avahi — reachable as `nixos-server.local` on LAN
+- **mDNS** via Avahi, reachable as `nixos-server.local` on LAN
 - **fail2ban** on SSH + Cockpit, TCP BBR + sysctl hardening, systemd watchdogs, `systemd-oomd`
-- **Unattended self-maintenance**: weekly `nixos-rebuild switch` from this repo (`system.autoUpgrade`, see below), weekly `nix.gc`/`nix.optimise`, `docker` autoprune, `fstrim`, smartd self-tests — most of this repo runs itself without you SSHing in
+- **Unattended self-maintenance**: weekly `nixos-rebuild switch` from this repo (`system.autoUpgrade`, see below), weekly `nix.gc`/`nix.optimise`, `docker` autoprune, `fstrim`, smartd self-tests. Most of this repo runs itself without you SSHing in
 - SSH host keys, `machine-id`, and NetworkManager/Tailscale/Cockpit state persisted (no reboot fingerprint warnings, no re-pairing)
 
 ## Self-Maintenance (`system.autoUpgrade`)
 
-`modules/system/core/autoupgrade.nix` pulls `git+https://github.com/rebizzz/nixos-server.git` (public repo, no deploy key needed) weekly at 04:00 (±45min jitter), runs `nixos-rebuild switch`, and reboots only if the kernel/modules changed, restricted to a 03:00–05:00 window. Rollback safety net is `boot.loader.systemd-boot.configurationLimit = 10` — the last 10 generations stay bootable from the boot menu if a switch goes bad.
+`modules/system/core/autoupgrade.nix` pulls `git+https://github.com/rebizzz/nixos-server.git` (public repo, no deploy key needed) weekly at 04:00 (±45min jitter), runs `nixos-rebuild switch`, and reboots only if the kernel/modules changed, restricted to a 03:00–05:00 window. Rollback safety net is `boot.loader.systemd-boot.configurationLimit = 10`: the last 10 generations stay bootable from the boot menu if a switch goes bad.
 
 To disable temporarily: `sudo systemctl stop nixos-upgrade.timer`.
 
 ## Optional Modules
 
-**Jellyfin media server** with Intel VA-API hardware transcoding — not imported by default. To enable, uncomment the line in `modules/hosts/nixos-server/default.nix`:
+**Jellyfin media server** with Intel VA-API hardware transcoding, not imported by default. To enable, uncomment the line in `modules/hosts/nixos-server/default.nix`:
 
 ```nix
 # inputs.self.modules.nixos.media
@@ -108,11 +109,11 @@ systemctl status cockpit tailscaled smartd sshd
 
 ### Day-to-Day Operations
 
-Normally you shouldn't need any of this — `system.autoUpgrade` handles routine updates. For manual changes:
+Normally you shouldn't need any of this, `system.autoUpgrade` handles routine updates. For manual changes:
 
 ```bash
-# From your workstation, after editing + pushing:
-ssh rebiz@10.42.0.42 'cd /etc/nixos && sudo nixos-rebuild switch --flake .#nixos-server'
+# From your workstation, after editing + pushing (no local checkout needed on the server):
+ssh rebiz@10.42.0.42 'sudo nixos-rebuild switch --flake github:rebizzz/nixos-server#nixos-server'
 
 # Or run locally on the server, from a checked-out copy of this repo:
 sudo nixos-rebuild switch --flake .#nixos-server
@@ -141,7 +142,7 @@ systemctl status sshd cockpit docker tailscaled smartd fail2ban
 - **SSH**: key-based, authorized keys declared in `modules/system/core/user.nix`
 - **Sudo**: passwordless for `rebiz`, restricted to `wheel` group members (`execWheelOnly`)
 - **Cockpit**: `http://nixos-server.local:9090`
-- Root/user password is sops-encrypted (`secrets/secrets.yaml`) — see `modules/system/core/secrets.nix`
+- Root/user password is sops-encrypted (`secrets/secrets.yaml`), see `modules/system/core/secrets.nix`
 
 ## License
 

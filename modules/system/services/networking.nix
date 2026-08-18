@@ -56,8 +56,7 @@ _: {
 
     services.openssh = {
       enable = true;
-      # Host keys must survive the ephemeral root wipe, or every reboot re-keys
-      # the box and every client sees a "man in the middle" warning.
+      # host keys survive the ephemeral root wipe so reboots don't re-key the box
       hostKeys = [
         {
           path = "/persistent/etc/ssh/ssh_host_ed25519_key";
@@ -77,19 +76,12 @@ _: {
       };
     };
 
-    # The Wi-Fi dongle (Realtek, idVendor=0bda) boots into its factory CD-ROM
-    # install-driver mode (idProduct=1a2b) instead of the real NIC mode
-    # (idProduct=c820), previously requiring a manual `usb-modeswitch -KW`.
-    #
-    # usb-modeswitch-data ships a udev rule for this exact ID, but its bundled
-    # config targets a different device (a D-Link dongle that shares the same
-    # generic Realtek CD-mode ID) — override it with the real target here.
-    # The udev rule dispatches asynchronously via `systemctl --no-block start
-    # usb_modeswitch@.service`; do NOT replace this with a udev RUN+= that
-    # calls usb_modeswitch directly — that blocks the udev worker for the
-    # several seconds the eject/re-enumeration takes, which on this box's
-    # already-busy boot (ZFS import + docker + sops) is long enough to miss
-    # the 30s hardware watchdog ping and hard-reset the machine mid-boot.
+    # The Wi-Fi dongle boots into a factory CD-ROM mode (0bda:1a2b) instead
+    # of NIC mode (0bda:c820). usb-modeswitch-data's bundled config for this
+    # ID targets a different device, so override the target below. Don't
+    # switch this udev rule to call usb_modeswitch directly (RUN+=) instead
+    # of the async dispatcher: a direct call blocks udev for several seconds
+    # and has previously hard-reset the box by missing the boot watchdog.
     services.udev.packages = with pkgs; [usb-modeswitch-data usb-modeswitch];
     systemd.packages = [pkgs.usb-modeswitch];
     environment.etc."usb_modeswitch.d/0bda:1a2b".text = ''
@@ -106,27 +98,15 @@ _: {
       usb-modeswitch
     ];
 
-    # NetworkManager's own autoconnect policy reliably fails to bring the
-    # declarative "ReBiz" profile up after boot/restart (confirmed via debug
-    # logs: it scans successfully every cycle but never proceeds past
-    # 'autoactivate' — only an explicit `nmcli connection up` clears it).
-    # This is a known, still-open upstream race between
-    # NetworkManager-ensure-profiles.service and NM's own init/autoconnect
-    # pass (NixOS/nixpkgs#296450) — the documented workaround is exactly
-    # `nmcli connection reload`/`up` after boot, so automate that instead of
-    # waiting on an upstream fix.
+    # NM autoconnect doesn't reliably bring "ReBiz" up on its own: a known
+    # upstream race between ensure-profiles and NM's init (nixpkgs#296450).
+    # Automate the documented workaround (`nmcli connection up`).
     systemd.services.wifi-autoconnect = {
       description = "Ensure the wifi connection comes up (NM autoconnect workaround)";
       after = ["NetworkManager.service"];
       serviceConfig = {
         Type = "oneshot";
-        # systemd services get a minimal PATH, so stick to bash builtins —
-        # no awk/grep/cut — plus nmcli's absolute store path.
-        #
-        # Retries every 1s for up to 30s instead of waiting out a single
-        # fixed delay: NM/iwd aren't ready the instant the timer fires, so a
-        # tight retry loop converges as fast as the hardware actually allows
-        # instead of just moving the fixed wait earlier.
+        # bash builtins only, no awk/grep/cut: systemd services get a minimal PATH
         ExecStart = pkgs.writeShellScript "wifi-autoconnect" ''
           is_connected() {
             connected=0

@@ -1,6 +1,6 @@
 _: {
   # Optional: Jellyfin with Intel VA-API hardware transcoding (i3-3220 Ivy Bridge, i965 driver).
-  # Access: http://nixos-server.local:8096. Not imported by default — see modules/hosts/nixos-server/default.nix.
+  # Access: http://nixos-server.local:8096. Not imported by default, see modules/hosts/nixos-server/default.nix.
   flake.modules.nixos.media = {pkgs, ...}: {
     services.jellyfin = {
       enable = true;

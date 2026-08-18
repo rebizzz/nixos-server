@@ -1,6 +1,6 @@
 {inputs, ...}: {
   # Pulls in every other flake.modules.nixos.* automatically. "media" is
-  # excluded — opt-in per host, see modules/hosts/nixos-server/default.nix.
+  # excluded; it's opt-in per host, see modules/hosts/nixos-server/default.nix.
   flake.modules.nixos.base = {pkgs, ...}: {
     imports =
       [
@@ -22,7 +22,7 @@
       efi.canTouchEfiVariables = true;
     };
 
-    # No local console — never stall waiting for an operator who isn't there.
+    # No local console, so never stall waiting for an operator who isn't there.
     systemd.enableEmergencyMode = false;
 
     environment.systemPackages = with pkgs; [
