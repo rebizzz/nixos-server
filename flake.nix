@@ -14,24 +14,16 @@
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
+    import-tree.url = "github:vic/import-tree";
   };
 
-  outputs = {
-    nixpkgs,
-    disko,
-    preservation,
-    sops-nix,
-    ...
-  } @ inputs: {
-    nixosConfigurations.nixos-server = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      specialArgs = {inherit inputs;};
-      modules = [
-        disko.nixosModules.disko
-        preservation.nixosModules.default
-        sops-nix.nixosModules.sops
-        ./configuration.nix
-      ];
+  outputs = inputs:
+    inputs.flake-parts.lib.mkFlake {inherit inputs;} {
+      systems = ["x86_64-linux"];
+      imports = [(inputs.import-tree ./modules)];
     };
-  };
 }

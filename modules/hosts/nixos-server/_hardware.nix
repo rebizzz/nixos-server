@@ -11,6 +11,10 @@
     "usbcore.autosuspend=-1"
     "panic=10"
     "oops=panic"
+    # ARC sized for this box's actual 1.8 GiB RAM, leaving headroom for Docker/Jellyfin.
+    "zfs.zfs_arc_min=268435456" # 256 MiB
+    "zfs.zfs_arc_max=805306368" # 768 MiB
+    "zfs.zfs_arc_sys_free=268435456" # 256 MiB headroom
   ];
 
   boot.initrd.availableKernelModules = [
@@ -31,13 +35,6 @@
     "btusb"
   ];
   boot.extraModulePackages = [];
-
-  boot.extraModprobeConfig = ''
-    options zfs zfs_arc_min=268435456
-    options zfs zfs_arc_max=1610612736
-    options zfs zfs_compressed_arc_enabled=1
-    options zfs zfs_arc_sys_free=536870912
-  '';
 
   boot.supportedFilesystems = ["btrfs" "zfs"];
 
