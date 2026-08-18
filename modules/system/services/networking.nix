@@ -10,7 +10,7 @@ _: {
         enable = true;
         wifi = {
           powersave = false;
-          backend = "wpa_supplicant";
+          backend = "iwd";
         };
         ensureProfiles = {
           environmentFiles = [config.sops.templates."network-manager.env".path];
@@ -42,6 +42,10 @@ _: {
         checkReversePath = "loose";
       };
     };
+
+    # NM's iwd wifi.backend talks to the system iwd daemon over D-Bus instead
+    # of spawning wpa_supplicant per-device; iwd must actually be running.
+    networking.wireless.iwd.enable = true;
 
     services.avahi = {
       enable = true;
@@ -122,16 +126,27 @@ _: {
         Type = "oneshot";
         # systemd services get a minimal PATH, so stick to bash builtins —
         # no awk/grep/cut — plus nmcli's absolute store path.
+        #
+        # Retries every 1s for up to 30s instead of waiting out a single
+        # fixed delay: NM/iwd aren't ready the instant the timer fires, so a
+        # tight retry loop converges as fast as the hardware actually allows
+        # instead of just moving the fixed wait earlier.
         ExecStart = pkgs.writeShellScript "wifi-autoconnect" ''
-          connected=0
-          while IFS=: read -r type state _; do
-            if [ "$type" = wifi ] && [ "$state" = connected ]; then
-              connected=1
-            fi
-          done < <(${pkgs.networkmanager}/bin/nmcli -t -f TYPE,STATE device status)
-          if [ "$connected" != 1 ]; then
-            ${pkgs.networkmanager}/bin/nmcli connection up ReBiz || true
-          fi
+          is_connected() {
+            connected=0
+            while IFS=: read -r type state _; do
+              if [ "$type" = wifi ] && [ "$state" = connected ]; then
+                connected=1
+              fi
+            done < <(${pkgs.networkmanager}/bin/nmcli -t -f TYPE,STATE device status)
+            [ "$connected" = 1 ]
+          }
+          for _ in $(seq 1 30); do
+            is_connected && exit 0
+            ${pkgs.networkmanager}/bin/nmcli connection up ReBiz >/dev/null 2>&1 || true
+            is_connected && exit 0
+            sleep 1
+          done
         '';
       };
     };
@@ -140,7 +155,7 @@ _: {
       description = "Periodically ensure the wifi connection is up";
       wantedBy = ["timers.target"];
       timerConfig = {
-        OnBootSec = "30s";
+        OnBootSec = "1s";
         OnUnitActiveSec = "1min";
         Unit = "wifi-autoconnect.service";
       };
