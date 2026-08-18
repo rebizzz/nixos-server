@@ -13,6 +13,11 @@ _: {
       };
     };
 
+    environment.systemPackages = [
+      pkgs.cockpit
+    ];
+
+
     services.tailscale = {
       enable = true;
       useRoutingFeatures = "both";
