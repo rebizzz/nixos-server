@@ -53,8 +53,20 @@ _: {
       }
 
       hostname="$(hostname)"
-      uptime_str="$(uptime -p 2>/dev/null | sed 's/^up //')"
-      [ -n "$uptime_str" ] || uptime_str="just booted"
+      
+      uptime_sec=$(cut -d. -f1 /proc/uptime 2>/dev/null)
+      [ -n "$uptime_sec" ] || uptime_sec=0
+      days=$(( uptime_sec / 86400 ))
+      hours=$(( (uptime_sec % 86400) / 3600 ))
+      mins=$(( (uptime_sec % 3600) / 60 ))
+      if [ "$days" -gt 0 ]; then
+        uptime_str="''${days}d ''${hours}h ''${mins}m"
+      elif [ "$hours" -gt 0 ]; then
+        uptime_str="''${hours}h ''${mins}m"
+      else
+        uptime_str="''${mins}m"
+      fi
+
       load_avg="$(awk '{print $1 ", " $2 ", " $3}' /proc/loadavg 2>/dev/null)"
       
       lan_ip="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}')"
