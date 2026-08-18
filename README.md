@@ -7,7 +7,7 @@ NixOS configuration for a headless home server / homelab. Built with Flakes, `fl
 | Component | Details |
 |---|---|
 | CPU | Intel Core i3-3220 @ 3.30GHz (Ivy Bridge, 4T) |
-| RAM | 1.8 GiB — every tunable in this repo (ZFS ARC, zram, swappiness) is sized for this, not a bigger box |
+| RAM | ~5.7 GiB — ZFS ARC/zram tunables in this repo are sized for this |
 | Boot | UEFI |
 | System SSD | `/dev/sda` — 120GB (Btrfs root) |
 | Data Pool | `/dev/sdb` + `/dev/sdc` — 2× 500GB HDD ZFS Mirror (`data`) |
@@ -55,7 +55,8 @@ nixos-config/
 
 - **Btrfs root** with ephemeral `/` (wiped on reboot), opt-in state at `/persistent`
 - **ZFS mirror pool** (`data`) with monthly scrubs, staggered Btrfs scrubs, and Sanoid automated snapshots
-- **ZFS ARC** capped at 768 MiB / min 256 MiB — sized for the real 1.8 GiB of RAM on this box, not a generic default
+- **ZFS ARC** capped at 2 GiB / min 512 MiB — sized for the real ~5.7 GiB of RAM on this box, not a generic default
+- **USB Wi-Fi auto-modeswitch**: the dongle boots into a factory CD-ROM mode and is auto-ejected into real NIC mode via udev, no manual `usb-modeswitch` needed
 - **zram** compressed swap (50% of RAM) — protects the SSD from swap wear
 - **Tailscale** mesh VPN, **Cockpit** web console (`:9090`), **Docker** with weekly auto-prune
 - **mDNS** via Avahi — reachable as `nixos-server.local` on LAN

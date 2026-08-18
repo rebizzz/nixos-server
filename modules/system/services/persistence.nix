@@ -37,8 +37,6 @@ _: {
           "/var/lib/cockpit"
           "/etc/cockpit"
           "/var/lib/smartmontools"
-
-          "/etc/zfs"
         ];
         files = [
           {
@@ -46,6 +44,10 @@ _: {
             inInitrd = true;
           }
           "/etc/adjtime"
+          # Only the cache file, not the whole /etc/zfs dir — persisting the
+          # directory shadows NixOS's environment.etc-managed /etc/zfs/zed.d
+          # symlinks and crash-loops zed with "No such file or directory".
+          "/etc/zfs/zpool.cache"
         ];
       };
     };

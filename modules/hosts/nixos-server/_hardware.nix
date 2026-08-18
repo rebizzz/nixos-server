@@ -11,10 +11,10 @@
     "usbcore.autosuspend=-1"
     "panic=10"
     "oops=panic"
-    # ARC sized for this box's actual 1.8 GiB RAM, leaving headroom for Docker/Jellyfin.
-    "zfs.zfs_arc_min=268435456" # 256 MiB
-    "zfs.zfs_arc_max=805306368" # 768 MiB
-    "zfs.zfs_arc_sys_free=268435456" # 256 MiB headroom
+    # ARC sized for this box's actual ~5.7 GiB RAM, leaving headroom for Docker/Jellyfin.
+    "zfs.zfs_arc_min=536870912" # 512 MiB
+    "zfs.zfs_arc_max=2147483648" # 2 GiB
+    "zfs.zfs_arc_sys_free=536870912" # 512 MiB headroom
   ];
 
   boot.initrd.availableKernelModules = [

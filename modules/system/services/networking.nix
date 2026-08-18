@@ -77,9 +77,18 @@ _: {
       };
     };
 
+    # The Wi-Fi dongle (Realtek, idVendor=0bda) boots into its factory CD-ROM
+    # install-driver mode (idProduct=1a2b) instead of the real NIC mode
+    # (idProduct=c820). Auto-eject it on plug/boot instead of requiring a
+    # manual `usb-modeswitch -KW`.
+    services.udev.extraRules = ''
+      ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="1a2b", RUN+="${pkgs.usb-modeswitch}/bin/usb_modeswitch -v 0x0bda -p 0x1a2b -V 0x0bda -P 0xc820 -K"
+    '';
+
     environment.systemPackages = with pkgs; [
       iw
       ethtool
+      usb-modeswitch
     ];
   };
 }
