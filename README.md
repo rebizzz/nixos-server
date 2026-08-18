@@ -1,148 +1,139 @@
 # nixos-server
 
-NixOS configuration for a headless home server / homelab. Built with Flakes, `flake-parts` + `import-tree` (dendritic module layout), Disko, and opt-in persistence via the `preservation` module.
+A NixOS config for a headless home server. You point `nixos-rebuild` at this repo and it builds the whole machine: disk layout, network, services, all of it. No manual setup steps beyond the first install.
 
-## Hardware
+Everything below assumes you're new to this repo or setting it up on different hardware.
 
-| Component | Details |
-|---|---|
-| CPU | Intel Core i3-3220 @ 3.30GHz (Ivy Bridge, 4T) |
-| RAM | ~5.7 GiB (ZFS ARC/zram tunables in this repo are sized for this) |
-| Boot | UEFI |
-| System SSD | `/dev/sda`, 120GB (Btrfs root) |
-| Data Pool | `/dev/sdb` + `/dev/sdc`, 2× 500GB HDD ZFS Mirror (`data`) |
-| Network | Realtek RTL810xE Ethernet + Realtek 802.11ac USB Wi-Fi |
-| Hostname | `nixos-server` / `nixos-server.local` (mDNS) |
-| LAN IP | `10.42.0.42` |
+## The disk, in plain terms
 
-## Storage Layout
+The system disk (`/dev/sda`, a small SSD) is split into separate Btrfs subvolumes for `/`, `/home`, `/nix`, `/persistent`, `/tmp`, and `/var/log`. All of them are regular, persistent storage, nothing here gets wiped on reboot.
+
+`/persistent` exists as a deliberate convention: things that matter (SSH host keys, Docker's data, Tailscale's state) are bind-mounted from there into their normal location, declared in `modules/system/services/persistence.nix`. That list was originally meant to back an ephemeral root (wipe `/` every boot, keep only what's explicitly listed), but that wipe was never actually implemented, `/` just persists like any normal Linux install. The bind-mounts are harmless leftovers from that original plan, not load-bearing for anything working today.
+
+Separately, two old spinning hard drives (`/dev/sdb` + `/dev/sdc`) are mirrored together with ZFS into a pool called `data`, mounted at `/mnt/data`. This is where actual data goes, media files, backups, whatever, because it survives a single drive dying (the system SSD is not mirrored, and a dead SSD takes the whole machine down).
 
 ```
-/dev/sda (Btrfs)
-├── /boot          (FAT32 EFI, 1GB)
-├── @              → /              (ephemeral root)
-├── @home          → /home
-├── @nix           → /nix
-├── @persistent    → /persistent    (opt-in state)
-├── @tmp           → /tmp           (cleared on reboot)
-└── @log           → /var/log
+system SSD (Btrfs, all persistent)
+├── /boot
+├── /              ← OS + anything installed outside of this repo (see caveat below)
+├── /persistent    ← convention for "stuff this repo explicitly cares about"
+├── /nix           ← the actual OS, built from this repo
+└── /var/log
 
-/dev/sdb + /dev/sdc (ZFS Mirror, nofail)
-└── data           → /mnt/data
+data pool (ZFS mirror, 2 HDDs, survives one drive dying)
+└── /mnt/data      ← put your actual files here
 ```
 
-## Module Structure
+**Caveat**: because `/` isn't wiped, anything you do by hand on the box (installing a package with `nix-env`, editing a file outside of git) will silently survive reboots instead of resetting to what this repo declares. If you want the machine to always exactly match this repo, don't rely on that, only change things by editing this repo and deploying.
 
-Every module file registers itself into `flake.modules.nixos.<name>`; the host composes them by name instead of a flat `imports` list (the "dendritic" flake-parts pattern via [`import-tree`](https://github.com/vic/import-tree)). Files/dirs prefixed with `_` (host disk/hardware specs) are excluded from auto-registration and imported explicitly.
+## How the config is organized
+
+Everything lives under `modules/`, one concern per file. Instead of one giant config file importing everything, each file declares itself into a shared registry (`flake.modules.nixos.<name>`) and a "base" module in `modules/system/core/base.nix` automatically pulls in all of them. You don't have to remember to wire up a new file, if it's under `modules/system/`, it's included automatically.
 
 ```
-nixos-config/
-├── flake.nix
-├── modules/
-│   ├── flake/flake-parts.nix        # enables flake.modules.* via flake-parts
-│   ├── hosts/nixos-server/
-│   │   ├── default.nix              # nixosSystem, composes named modules
-│   │   ├── _disko.nix               # declarative disk partitioning
-│   │   └── _hardware.nix            # kernel modules, ZFS ARC sizing, hostId
-│   └── system/
-│       ├── core/                    # base (boot/locale/stateVersion), nix (GC/optimise), autoupgrade, secrets, user
-│       ├── hardware/                # zfs (scrubs/snapshots), power (zram/watchdog/oomd)
-│       └── services/                # networking, security, containers, services (cockpit/tailscale/smartd), persistence, media (optional)
-└── secrets/                          # sops-encrypted
+modules/
+├── hosts/nixos-server/     ← THIS machine's specifics: disk layout, hardware, hostname
+│   ├── default.nix         ← wires the host together
+│   ├── _disko.nix          ← which physical disks, how they're partitioned
+│   └── _hardware.nix       ← kernel modules, RAM-dependent tuning, hostId
+└── system/
+    ├── core/                ← boot, locale, users, auto-updates
+    ├── hardware/            ← ZFS, zram, power/watchdog settings
+    └── services/            ← networking, SSH, Docker, Cockpit, Tailscale, etc.
 ```
 
-## What's Included
+Files starting with `_` (the two under `hosts/nixos-server/`) are hardware-specific and don't get auto-included, they're wired in by hand in `default.nix` because they only make sense for this exact machine.
 
-- **Btrfs root** with ephemeral `/` (wiped on reboot), opt-in state at `/persistent`
-- **ZFS mirror pool** (`data`) with monthly scrubs, staggered Btrfs scrubs, and Sanoid automated snapshots
-- **ZFS ARC** capped at 2 GiB / min 512 MiB, sized for the real ~5.7 GiB of RAM on this box, not a generic default
-- **USB Wi-Fi auto-modeswitch**: the dongle boots into a factory CD-ROM mode and is auto-ejected into real NIC mode via udev, no manual `usb-modeswitch` needed
-- **Wi-Fi self-heal**: a systemd timer checks every minute (first check ~1s after boot, retried every 1s for up to 30s) that Wi-Fi is actually connected and brings it up if not. Works around a known NixOS/nixpkgs upstream race (nixpkgs#296450) where `NetworkManager-ensure-profiles` can beat NetworkManager's own autoconnect pass
-- **zram** compressed swap (50% of RAM), protects the SSD from swap wear
-- **Tailscale** mesh VPN, **Cockpit** web console (`:9090`), **Docker** with weekly auto-prune
-- **mDNS** via Avahi, reachable as `nixos-server.local` on LAN
-- **fail2ban** on SSH + Cockpit, TCP BBR + sysctl hardening, systemd watchdogs, `systemd-oomd`
-- **Unattended self-maintenance**: weekly `nixos-rebuild switch` from this repo (`system.autoUpgrade`, see below), weekly `nix.gc`/`nix.optimise`, `docker` autoprune, `fstrim`, smartd self-tests. Most of this repo runs itself without you SSHing in
-- SSH host keys, `machine-id`, and NetworkManager/Tailscale/Cockpit state persisted (no reboot fingerprint warnings, no re-pairing)
+## What's actually running
 
-## Self-Maintenance (`system.autoUpgrade`)
+- **Auto-updates**: once a week the box pulls this repo from GitHub and rebuilds itself. It only reboots if the kernel changed, and only in a 3–5am window. If a bad update ever leaves it unbootable, the boot menu keeps the last 10 generations, pick an older one.
+- **Health banner**: every time you SSH in, you get a one-line warning if anything's actually wrong (failed service, unhealthy disk, degraded ZFS pool). Silent if everything's fine.
+- **Wi-Fi self-heal**: a background check every minute makes sure Wi-Fi is actually connected and reconnects it if not (NetworkManager has a known bug where it doesn't always autoconnect on its own).
+- **Cleans up after itself**: old system versions, unused Docker images, old ZFS snapshots, and journal logs all get pruned automatically on a schedule. Disk usage doesn't creep up over time.
+- **Cockpit**: a web dashboard at `http://nixos-server.local:9090` for a GUI view of the machine.
+- **Tailscale**: a VPN so you can reach the box from anywhere without opening ports on your router.
 
-`modules/system/core/autoupgrade.nix` pulls `git+https://github.com/rebizzz/nixos-server.git` (public repo, no deploy key needed) weekly at 04:00 (±45min jitter), runs `nixos-rebuild switch`, and reboots only if the kernel/modules changed, restricted to a 03:00–05:00 window. Rollback safety net is `boot.loader.systemd-boot.configurationLimit = 10`: the last 10 generations stay bootable from the boot menu if a switch goes bad.
+## Jellyfin (media server), optional
 
-To disable temporarily: `sudo systemctl stop nixos-upgrade.timer`.
+Jellyfin isn't turned on by default. It's a media server (think self-hosted Netflix for your own files) that lives in `modules/system/services/media.nix`, and it's set up to use this box's Intel GPU for hardware video transcoding instead of burning the CPU.
 
-## Optional Modules
-
-**Jellyfin media server** with Intel VA-API hardware transcoding, not imported by default. To enable, uncomment the line in `modules/hosts/nixos-server/default.nix`:
+It's off by default because not everyone running this repo wants a media server eating resources. To turn it on, edit `modules/hosts/nixos-server/default.nix` and uncomment one line:
 
 ```nix
-# inputs.self.modules.nixos.media
+modules = [
+  inputs.self.modules.nixos.base
+  ./_disko.nix
+  ./_hardware.nix
+  inputs.self.modules.nixos.media  # was commented out
+];
 ```
 
-Then deploy and open `http://nixos-server.local:8096`. Put media files at `/mnt/data/media`.
+Push, deploy (see below), then open `http://nixos-server.local:8096` and put your media files in `/mnt/data/media`.
 
-## Deployment
+## Setting this up on your own machine
 
-### Requirements
+This repo is currently wired for one specific box (an old i3 with 2 spinning disks + 1 SSD). If you want to reuse it for different hardware, here's everything that's hardware-specific and needs changing:
 
-- Target machine booted into the [NixOS minimal ISO](https://nixos.org/download)
-- SSH access from the deploying machine
+| What | Where | What to change it to |
+|---|---|---|
+| Disk device names | `modules/hosts/nixos-server/_disko.nix` | Your actual `/dev/sdX` (or better, `/dev/disk/by-id/...`) paths. Run `lsblk` on the target machine to find them. |
+| Hostname | `modules/system/services/networking.nix` | Whatever you want the box to be called. |
+| Machine-unique ZFS ID | `modules/hosts/nixos-server/_hardware.nix` (`networking.hostId`) | Any random 8 hex digits, just needs to be unique. `head -c4 /dev/urandom \| od -A none -t x4` generates one. |
+| RAM-based tuning (ZFS ARC, zram) | `modules/hosts/nixos-server/_hardware.nix`, `modules/system/hardware/power.nix` | Check `free -h` on the target machine and size these to roughly a quarter to a third of total RAM, not a fixed number copied from here. |
+| Wi-Fi network name/password | `modules/system/services/networking.nix` (`ensureProfiles.profiles`), `secrets/secrets.yaml` (the `wifi_psk` secret) | Your own SSID, and re-encrypt the secret for your own age key (see below). |
+| Smartd disk IDs, hdparm spindown rule | `modules/system/services/services.nix` | The `by-id` paths of your own disks, from `ls /dev/disk/by-id/`. Skip entirely if you don't have spinning disks. |
+| Cockpit allowed origins | `modules/system/services/services.nix` (`Origins`) | Your box's hostname and IP, in place of `nixos-server.local` / `10.42.0.42`. |
+| SSH keys, GitHub repo URL for auto-upgrade | `modules/system/core/user.nix`, `modules/system/core/autoupgrade.nix` | Your own SSH public keys, and your own fork's URL if you're not pushing to `rebizzz/nixos-server`. |
+| USB Wi-Fi modeswitch IDs | `modules/system/services/networking.nix` | Only relevant if you have a USB Wi-Fi dongle that boots into a fake CD-ROM mode. Remove this whole block if not, or find your device's IDs with `lsusb`. |
 
-### Fresh install (disko + nixos-anywhere)
+### Secrets
+
+Secrets (the wifi password, the login password) are encrypted with [sops](https://github.com/getsops/sops) into `secrets/secrets.yaml`, and only decryptable with the age key declared in `.sops.yaml`. To use this repo on your own machine:
+
+1. Generate your own age key: `age-keygen -o key.txt`
+2. Put the public key it prints into `.sops.yaml`
+3. Re-encrypt the secrets file for your key: `sops updatekeys secrets/secrets.yaml`
+4. Put the private key (`key.txt`) at `/persistent/etc/sops/age/keys.txt` on the target machine, this is the one thing that has to exist there before secrets can decrypt, and it's not something git can hand you back if you lose it. Keep a backup somewhere else too.
+
+### Installing fresh
+
+Boot the target machine into the [NixOS minimal ISO](https://nixos.org/download), then from your own computer:
 
 ```bash
-cd /path/to/nixos-config
 nix run github:nix-community/nixos-anywhere -- --flake .#nixos-server rebiz@<installer-ip>
 ```
 
-This partitions/formats disks per `modules/hosts/nixos-server/_disko.nix`, installs NixOS, and reboots into the new system.
-
-### After First Boot
+This partitions the disks exactly as declared in `_disko.nix`, installs NixOS, and reboots into the finished system. After it comes back up:
 
 ```bash
 ssh rebiz@nixos-server.local
 passwd                       # change the initial password
-sudo tailscale up
-zpool status data            # confirm the pool imported
-systemctl status cockpit tailscaled smartd sshd
+sudo tailscale up            # join your tailnet, if using it
+zpool status data            # confirm the ZFS pool imported cleanly
 ```
 
-### Day-to-Day Operations
+## Making changes after that
 
-Normally you shouldn't need any of this, `system.autoUpgrade` handles routine updates. For manual changes:
+You don't need a checkout of this repo on the server itself, edit locally, push to GitHub, then:
 
 ```bash
-# From your workstation, after editing + pushing (no local checkout needed on the server):
 ssh rebiz@10.42.0.42 'sudo nixos-rebuild switch --flake github:rebizzz/nixos-server#nixos-server'
-
-# Or run locally on the server, from a checked-out copy of this repo:
-sudo nixos-rebuild switch --flake .#nixos-server
-
-nix flake check                        # verify eval before deploying
-nix flake update                       # bump flake inputs
-sudo nix-collect-garbage -d            # reclaim store space immediately
-zpool status data                      # ZFS pool health
-sudo sanoid --list-snapshots           # list snapshots
-sudo journalctl -p err -b              # boot errors, if something looks off
-systemctl --failed                     # any failed units
 ```
 
-### Verifying a Deploy
+Most weeks you won't even need to do this, the auto-upgrade timer does it for you. Useful commands either way:
 
 ```bash
-systemctl --failed                                 # expect: 0 loaded units
-zpool status data                                   # expect: ONLINE, no errors
-free -h                                             # sanity-check memory headroom
-cat /sys/module/zfs/parameters/zfs_arc_max          # confirm ARC cap took effect
-systemctl status sshd cockpit docker tailscaled smartd fail2ban
+nix flake check                # catch config errors before deploying
+systemctl --failed             # any broken services right now
+zpool status data              # ZFS pool health
+sudo journalctl -p err -b      # boot errors, if something looks off
 ```
 
-## Login
+## Logging in
 
-- **SSH**: key-based, authorized keys declared in `modules/system/core/user.nix`
-- **Sudo**: passwordless for `rebiz`, restricted to `wheel` group members (`execWheelOnly`)
-- **Cockpit**: `http://nixos-server.local:9090`
-- Root/user password is sops-encrypted (`secrets/secrets.yaml`), see `modules/system/core/secrets.nix`
+- **SSH**: key-based only (no passwords accepted). Your public key needs to be in `modules/system/core/user.nix`.
+- **Sudo**: passwordless for the `rebiz` user, no separate root login exists.
+- **Cockpit**: `http://nixos-server.local:9090`, same login as SSH.
 
 ## License
 

@@ -1,11 +1,33 @@
 {
   lib,
+  pkgs,
   modulesPath,
   ...
 }: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
+
+  boot.initrd.systemd.services.rollback-root = {
+    description = "Roll back / to a blank btrfs snapshot";
+    wantedBy = ["initrd.target"];
+    before = ["sysroot.mount"];
+    unitConfig.DefaultDependencies = "no";
+    serviceConfig.Type = "oneshot";
+    path = [pkgs.btrfs-progs];
+    script = ''
+      mkdir -p /mnt
+      mount -o subvol=/ /dev/disk/by-partlabel/disk-sda-root /mnt
+      btrfs subvolume list -o /mnt/@ |
+        cut -f9 -d' ' |
+        while read -r subvolume; do
+          btrfs subvolume delete "/mnt/$subvolume"
+        done
+      btrfs subvolume delete /mnt/@
+      btrfs subvolume snapshot /mnt/@blank /mnt/@
+      umount /mnt
+    '';
+  };
 
   boot.kernelParams = [
     "usbcore.autosuspend=-1"
