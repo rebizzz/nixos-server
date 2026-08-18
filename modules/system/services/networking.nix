@@ -79,10 +79,25 @@ _: {
 
     # The Wi-Fi dongle (Realtek, idVendor=0bda) boots into its factory CD-ROM
     # install-driver mode (idProduct=1a2b) instead of the real NIC mode
-    # (idProduct=c820). Auto-eject it on plug/boot instead of requiring a
-    # manual `usb-modeswitch -KW`.
-    services.udev.extraRules = ''
-      ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="1a2b", RUN+="${pkgs.usb-modeswitch}/bin/usb_modeswitch -v 0x0bda -p 0x1a2b -V 0x0bda -P 0xc820 -K"
+    # (idProduct=c820), previously requiring a manual `usb-modeswitch -KW`.
+    #
+    # usb-modeswitch-data ships a udev rule for this exact ID, but its bundled
+    # config targets a different device (a D-Link dongle that shares the same
+    # generic Realtek CD-mode ID) — override it with the real target here.
+    # The udev rule dispatches asynchronously via `systemctl --no-block start
+    # usb_modeswitch@.service`; do NOT replace this with a udev RUN+= that
+    # calls usb_modeswitch directly — that blocks the udev worker for the
+    # several seconds the eject/re-enumeration takes, which on this box's
+    # already-busy boot (ZFS import + docker + sops) is long enough to miss
+    # the 30s hardware watchdog ping and hard-reset the machine mid-boot.
+    services.udev.packages = with pkgs; [usb-modeswitch-data usb-modeswitch];
+    systemd.packages = [pkgs.usb-modeswitch];
+    environment.etc."usb_modeswitch.d/0bda:1a2b".text = ''
+      DefaultVendor=0x0bda
+      DefaultProduct=0x1a2b
+      TargetVendor=0x0bda
+      TargetProduct=0xc820
+      StandardEject=1
     '';
 
     environment.systemPackages = with pkgs; [
